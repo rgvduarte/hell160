@@ -24,6 +24,11 @@
 .adm-tabs button:first-child { padding-left: 0; }
 .adm-tabs button:hover { color: var(--fg); }
 .adm-tabs button[aria-selected='true'] { color: var(--fg); border-bottom-color: var(--ember); }
+@media (max-width: 640px) {
+  .adm-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; border-bottom: 0; }
+  .adm-tabs button, .adm-tabs button:first-child { padding: 14px 0 11px; margin-bottom: 0; font-size: 12px; border-bottom: 3px solid transparent; box-shadow: 0 1px 0 var(--line); }
+  .adm-tabs button:nth-child(n + 4) { box-shadow: 0 2px 0 var(--fg); }
+}
 .adm-badge { font: 600 11px/1 var(--mono); background: var(--ember); color: var(--chalk); padding: 3px 6px; letter-spacing: 0; }
 
 .adm-body { padding: clamp(32px, 4vw, 56px) 0 clamp(72px, 8vw, 128px); }
@@ -57,7 +62,8 @@
 .adm-mini > div { height: 100%; background: var(--ember); }
 
 /* ---------- ocupação por prova ---------- */
-.adm-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--muted); padding: 0 0 12px; border-bottom: 2px solid var(--fg); }
+.adm-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--muted); padding-bottom: 4px; }
+.adm-bars { border-top: 2px solid var(--fg); }
 .adm-legend i { display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: -1px; }
 .adm-bar { padding: 16px 0 14px; border-bottom: 1px solid var(--line); }
 .adm-bar-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
@@ -90,12 +96,13 @@
 .adm-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-top: 2px solid var(--fg); max-width: 100%; }
 .adm-scroll .board { min-width: var(--min, 860px); }
 .adm-table tr { cursor: default; }
-.adm-table th, .adm-table td { vertical-align: top; }
+.adm-table th, .adm-table td { vertical-align: top; white-space: nowrap; }
+.adm-table td.who, .adm-table td.adm-wrap { white-space: normal; }
 .adm-table th { white-space: nowrap; }
 .adm-table td small { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); }
 .adm-table .num { text-align: right; }
 .adm-table .who { font: 500 15px/1.3 var(--sans); }
-.adm-table .adm-wrap { max-width: 32ch; }
+.adm-table .adm-wrap { min-width: 16ch; max-width: 32ch; }
 .adm-table a { text-underline-offset: 3px; }
 .adm-table a:hover { color: var(--ember); }
 .adm-table tr.off td { color: var(--muted); }
@@ -120,6 +127,7 @@
 
 /* ações por linha: reaproveitam .chip */
 .adm-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.adm-table .adm-acts { flex-direction: column; align-items: flex-start; }
 .adm .chip.adm-act { padding: 6px 9px; font-size: 11px; white-space: nowrap; }
 .adm .chip.adm-act:hover { background: var(--fg); color: var(--bg); }
 .adm .chip.adm-act.go { background: var(--fg); color: var(--bg); }
@@ -141,12 +149,21 @@
 .adm-inline { flex-direction: row; align-items: baseline; gap: 12px; }
 .adm-inline select { width: auto; padding: 6px 0; font-size: 15px; }
 
+.adm-toast {
+  position: fixed; z-index: 60; left: 50%; bottom: 20px; transform: translateX(-50%);
+  width: min(760px, calc(100vw - 32px)); margin: 0;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
+  background: color-mix(in srgb, var(--ember) 8%, var(--bg));
+  box-shadow: 0 0 0 1px var(--line), 0 14px 36px rgba(21, 18, 15, 0.2);
+}
+.adm-toast.adm-ok { background: color-mix(in srgb, var(--ok) 9%, var(--bg)); }
+.adm-toast a { text-underline-offset: 3px; }
 .adm-flash { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin: 0 0 20px; }
 .adm-flash a { text-underline-offset: 3px; }
 .adm-ok { border-left-color: var(--ok); background: color-mix(in srgb, var(--ok) 9%, transparent); }
 .adm-x { flex: none; background: none; border: 0; padding: 2px 0; color: var(--muted); cursor: pointer; font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; }
 .adm-x:hover { color: var(--fg); }
-@media (max-width: 640px) { .adm-flash { flex-direction: column; } }
+@media (max-width: 640px) { .adm-flash { flex-direction: column; } .adm-toast { bottom: 12px; } }
 
 /* ---------- candidaturas de anfitriões ---------- */
 .adm-apps { border-top: 2px solid var(--fg); }
@@ -172,6 +189,7 @@
 
 /* ---------- dados ---------- */
 .adm-counts { border-top: 2px solid var(--fg); padding-top: 16px; }
+.adm-counts dd { font-size: 15px; }
 .adm-ops { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--fg); }
 .adm-ops li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 32px; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--line); }
 .adm-ops p { margin: 6px 0 0; font-size: 15px; }

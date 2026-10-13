@@ -1,0 +1,181 @@
+/* Inscrição, alojamento e anfitriões (Register, Stay, Host, HostArea).
+   Reutiliza o sistema de global.css; aqui só o que estas páginas têm de próprio. */
+
+.flow-title { font-size: clamp(44px, 8vw, 120px); }
+.flow-h2 { font-size: clamp(32px, 4vw, 52px); }
+.flow-span { grid-column: 1 / -1; }
+.flow-fine { font-size: 13px; margin: 0; }
+
+/* ---------- formulário + resumo ---------- */
+.flow-split { grid-template-columns: 7fr 4fr; }
+.flow-split.wide { grid-template-columns: 7fr 5fr; }
+@media (max-width: 860px) {
+  .flow-split, .flow-split.wide { grid-template-columns: 1fr; }
+  .flow-split .summary { position: static; }
+}
+
+.field .flow-err { color: var(--ember-ink); }
+.field input[aria-invalid='true'], .field select[aria-invalid='true'] { border-color: var(--ember); }
+.notice.flow-block { margin: 0; }
+.notice.flow-block a { font-weight: 600; }
+
+.flow-steplabel { display: none; }
+@media (max-width: 640px) {
+  .flow-steplabel { display: block; margin: -32px 0 32px; }
+}
+
+/* opções indisponíveis (prova esgotada, casa sem noites) */
+.flow-choice label:has(input:disabled) { cursor: not-allowed; color: var(--muted); }
+.flow-choice label:has(input:disabled) strong { font-weight: 600; }
+.flow-left { display: block; margin-top: 4px; font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.flow-left.low { color: var(--ember); }
+.choice label:has(input:checked) .flow-left { color: inherit; opacity: 0.75; }
+.flow-price { text-align: right; }
+.flow-price small { display: block; font-size: 11px; color: var(--muted); }
+
+/* casas no passo de alojamento: miniatura da fachada */
+.flow-houses label { grid-template-columns: 28px 92px 1fr auto; }
+.flow-thumb { display: block; aspect-ratio: 4 / 3; overflow: hidden; background: var(--chalk-2); }
+.flow-thumb.none { background: transparent; border: 1px dashed currentColor; opacity: 0.35; }
+@media (max-width: 560px) {
+  .flow-houses label { grid-template-columns: 24px 1fr auto; gap: 12px; }
+  .flow-thumb { display: none; }
+}
+
+/* atestado médico */
+.flow-file input[type='file'] { font: 400 15px var(--sans); padding: 10px 0; }
+.flow-file input[type='file']::file-selector-button {
+  font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 10px 14px; margin-right: 14px; border: 2px solid var(--fg); background: transparent; color: var(--fg); cursor: pointer;
+}
+.flow-file input[type='file']::file-selector-button:hover { background: var(--fg); color: var(--bg); }
+.flow-file-row { display: flex; gap: 8px 16px; align-items: center; flex-wrap: wrap; padding: 8px 0; border-bottom: 2px solid var(--fg); }
+.flow-file-row .name { font: 500 14px var(--mono); overflow-wrap: anywhere; }
+
+.flow-check { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+.flow-check input { accent-color: var(--ember); width: 18px; height: 18px; margin-top: 3px; flex: none; }
+.flow-kv { max-width: 560px; }
+.flow-kv dd { overflow-wrap: anywhere; }
+
+/* ---------- inscrição concluída ---------- */
+.flow-done {
+  display: grid; grid-template-columns: 7fr 5fr; grid-template-areas: 'info pay' 'next pay';
+  gap: 48px clamp(32px, 6vw, 96px); align-items: start;
+}
+.flow-done > * { min-width: 0; }
+.flow-done .info { grid-area: info; }
+.flow-done .pay-col { grid-area: pay; }
+.flow-done .next { grid-area: next; }
+@media (max-width: 860px) {
+  .flow-done { grid-template-columns: 1fr; grid-template-areas: 'info' 'pay' 'next'; gap: 40px; }
+  .flow-done .summary { position: static; }
+}
+.flow-bib { display: block; font-size: clamp(110px, 13vw, 180px); line-height: 0.82; margin-top: 12px; font-variant-numeric: tabular-nums; }
+.flow-bibbox { border-top: 2px solid var(--ember); padding-top: 12px; }
+.flow-ref { font: 500 clamp(22px, 2.6vw, 30px)/1.1 var(--mono); letter-spacing: 0.02em; margin: 8px 0 0; overflow-wrap: anywhere; }
+
+/* ---------- alojamento: lista ---------- */
+.flow-count { align-items: baseline; }
+.flow-count .btn { margin-left: auto; }
+.listing .flow-free { font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.listing .flow-free.low { color: var(--ember); }
+.listing.is-full .plate { opacity: 0.45; }
+
+/* ---------- alojamento: detalhe ---------- */
+.flow-night-note { display: block; font-size: 13px; color: var(--muted); }
+.flow-night-note.warn { color: var(--ember-ink); font-weight: 500; }
+.choice label:has(input:checked) .flow-night-note { color: inherit; opacity: 0.75; }
+.flow-plate { aspect-ratio: 16 / 10; overflow: hidden; }
+
+/* ---------- anfitriões ---------- */
+.flow-refform { display: grid; grid-template-columns: 1fr auto; gap: 12px 20px; align-items: end; max-width: 560px; }
+.flow-refform .field { min-width: 0; }
+.flow-refform .flow-err-line { grid-column: 1 / -1; }
+@media (max-width: 480px) { .flow-refform { grid-template-columns: 1fr; } .flow-refform .btn { justify-self: start; } }
+.flow-err-line { margin: 0; padding-left: 12px; border-left: 3px solid var(--ember); color: var(--ember-ink); font-size: 14px; }
+.flow-ok-line { margin: 0; padding-left: 12px; border-left: 3px solid var(--ok); font-size: 14px; }
+
+/* ---------- área do anfitrião ---------- */
+.ha-head { display: grid; grid-template-columns: 1fr minmax(220px, 360px); gap: 32px clamp(32px, 6vw, 96px); align-items: end; }
+.ha-head > * { min-width: 0; }
+.ha-plate { aspect-ratio: 4 / 3; overflow: hidden; }
+.ha-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 20px 0 0; }
+.ha-meta span + span::before { content: '·'; margin-right: 10px; }
+@media (max-width: 760px) {
+  .ha-head { grid-template-columns: 1fr; }
+  .ha-plate { max-width: 360px; }
+}
+
+.ha-timeline { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--fg); }
+.ha-timeline li { display: grid; grid-template-columns: 32px 1fr; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.ha-timeline li::before { content: ''; width: 12px; height: 12px; margin-top: 5px; border: 2px solid var(--fg); box-sizing: border-box; }
+.ha-timeline li[data-s='done']::before { background: var(--fg); }
+.ha-timeline li[data-s='now']::before { background: var(--ember); border-color: var(--ember); }
+.ha-timeline li[data-s='todo'] { color: var(--muted); }
+.ha-timeline li[data-s='todo']::before { border-color: currentColor; opacity: 0.6; }
+.ha-timeline li[data-s='off']::before { background: var(--muted); border-color: var(--muted); }
+.ha-timeline strong { display: block; font: 700 18px/1.25 var(--sans); }
+.ha-timeline p { margin: 4px 0 0; font-size: 15px; color: var(--muted); }
+.ha-timeline li[data-s='now'] p { color: var(--ink-2); }
+
+.stats.ha-stats { grid-template-columns: repeat(4, 1fr); }
+.stats.ha-stats > div:nth-child(4) { border-right: 0; }
+@media (max-width: 860px) {
+  .stats.ha-stats { grid-template-columns: repeat(2, 1fr); }
+  .stats.ha-stats > div:nth-child(n) { border-right: 1px solid var(--line); border-top: 0; padding-left: 16px; }
+  .stats.ha-stats > div:nth-child(2n) { border-right: 0; }
+  .stats.ha-stats > div:nth-child(2n + 1) { padding-left: 0; }
+  .stats.ha-stats > div:nth-child(n + 3) { border-top: 1px solid var(--line); }
+}
+
+.ha-nights { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 2px solid var(--fg); }
+.ha-nights > div { padding: 16px 16px 18px 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); min-width: 0; }
+.ha-nights > div + div { padding-left: 16px; }
+.ha-nights > div:last-child { border-right: 0; }
+.ha-nights b { display: block; font: 800 24px/1 var(--display); font-variation-settings: 'wdth' 80; text-transform: uppercase; }
+.ha-nights .st { display: block; margin-top: 10px; font: 500 12px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ha-nights .st.taken { color: var(--fg); }
+.ha-nights .st.pend { color: var(--ember); }
+.ha-nights small { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .ha-nights { grid-template-columns: 1fr 1fr; }
+  .ha-nights > div:nth-child(n) { padding-left: 16px; border-right: 1px solid var(--line); }
+  .ha-nights > div:nth-child(2n) { border-right: 0; }
+  .ha-nights > div:nth-child(2n + 1) { padding-left: 0; }
+}
+
+.ha-books { border-top: 2px solid var(--fg); }
+.ha-book {
+  display: grid; grid-template-columns: 130px minmax(0, 1.5fr) minmax(0, 1.3fr) 64px 80px minmax(190px, auto);
+  grid-template-areas: 'ref who nights ppl total acts' 'msg msg msg msg msg msg';
+  gap: 6px 20px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line);
+}
+.ha-book > * { min-width: 0; }
+.ha-book .ref { grid-area: ref; }
+.ha-book .who { grid-area: who; }
+.ha-book .nights { grid-area: nights; font-size: 15px; }
+.ha-book .ppl { grid-area: ppl; font: 500 14px var(--mono); }
+.ha-book .total { grid-area: total; font: 500 15px var(--mono); text-align: right; border: 0; margin: 0; padding: 0; display: block; }
+.ha-book .acts { grid-area: acts; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.ha-book .msg { grid-area: msg; margin-top: 6px; }
+.ha-book .msg:empty { display: none; }
+.ha-book .who strong { display: block; font-weight: 600; }
+.ha-book .who span { display: block; font-size: 14px; color: var(--muted); overflow-wrap: anywhere; }
+.ha-book .ref .mono { display: block; }
+.ha-book .ref .tag { margin-top: 6px; }
+.ha-book.is-off { color: var(--muted); }
+.ha-book .clash { display: block; margin-top: 4px; font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ember); }
+.ha-bhead { padding: 10px 0; border-bottom: 1px solid var(--line); font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ha-bhead > span:nth-child(5) { text-align: right; }
+@media (max-width: 900px) {
+  .ha-bhead { display: none; }
+  .ha-book {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'ref total' 'who who' 'nights ppl' 'acts acts' 'msg msg';
+    gap: 10px 16px;
+  }
+  .ha-book .acts { justify-content: flex-start; margin-top: 4px; }
+  .ha-book .ppl { text-align: right; }
+}
+
+.ha-edit { max-width: 640px; }

@@ -99,9 +99,17 @@ function writeUnlocked(on: boolean) {
 type Flash = { tone: 'ok' | 'error'; text: ReactNode } | null
 
 function FlashNote({ flash, onClose }: { flash: Flash; onClose: () => void }) {
+  // Aviso fixo no fundo do ecrã: as ações acontecem a meio de tabelas longas, longe do topo.
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => {
+    if (flash?.tone !== 'ok') return
+    const id = window.setTimeout(() => close.current(), 9000)
+    return () => window.clearTimeout(id)
+  }, [flash])
   if (!flash) return null
   return (
-    <div className={`notice adm-flash${flash.tone === 'ok' ? ' adm-ok' : ''}`} role={flash.tone === 'error' ? 'alert' : 'status'}>
+    <div className={`notice adm-toast${flash.tone === 'ok' ? ' adm-ok' : ''}`} role={flash.tone === 'error' ? 'alert' : 'status'}>
       <div>{flash.text}</div>
       <button type="button" className="adm-x" onClick={onClose}>
         Fechar
@@ -117,6 +125,22 @@ function SectionHead({ title, children }: { title: string; children?: ReactNode 
       {children && <div className="row">{children}</div>}
     </div>
   )
+}
+
+// Emails longos partem antes do @ para as tabelas caberem no ecrã.
+function Email({ value, link = false }: { value: string; link?: boolean }) {
+  const at = value.indexOf('@')
+  const body =
+    at > 0 ? (
+      <>
+        {value.slice(0, at)}
+        <wbr />
+        {value.slice(at)}
+      </>
+    ) : (
+      value
+    )
+  return link ? <a href={`mailto:${value}`}>{body}</a> : body
 }
 
 // ---------- entrada ----------
@@ -188,7 +212,7 @@ function Gate({ onUnlock }: { onUnlock: () => void }) {
           <button className="btn" disabled={!pin.trim()}>
             Entrar
           </button>
-          <p className="notice" id="adm-pin-help" style={{ margin: 0 }}>
+          <p className="notice" id="adm-pin-help" style={{ marginBottom: 0 }}>
             PIN de demonstração: 2027. Este controlo é só no browser e não protege dados reais.
           </p>
         </form>
@@ -221,7 +245,9 @@ function Console({ onExit }: { onExit: () => void }) {
   const go = (id: TabId) => setParams({ tab: id })
 
   function onKey(e: KeyboardEvent<HTMLDivElement>) {
-    const i = TABS.findIndex((t) => t.id === tab)
+    // parte do separador com foco: o estado do router pode ainda não ter mudado entre duas teclas rápidas
+    const focused = TABS.findIndex((t) => tabRefs.current[t.id] === document.activeElement)
+    const i = focused >= 0 ? focused : TABS.findIndex((t) => t.id === tab)
     const next =
       e.key === 'ArrowRight' ? (i + 1) % TABS.length : e.key === 'ArrowLeft' ? (i - 1 + TABS.length) % TABS.length : e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1 : -1
     if (next < 0) return
@@ -365,7 +391,9 @@ function Overview({ data }: { data: Collections }) {
 
       <div className="adm-cols mt-l">
         <div>
-          <SectionHead title="Ocupação por prova" />
+          <SectionHead title="Ocupação por prova">
+            <BarLegend />
+          </SectionHead>
           <RaceBars regs={regs} />
         </div>
         <div>
@@ -446,23 +474,28 @@ function EmptyStore() {
   )
 }
 
+function BarLegend() {
+  return (
+    <div className="adm-legend mono" aria-hidden="true">
+      <span>
+        <i className="paid" />
+        Pagas
+      </span>
+      <span>
+        <i className="pend" />
+        Pendentes
+      </span>
+      <span>
+        <i className="free" />
+        Vagas livres
+      </span>
+    </div>
+  )
+}
+
 function RaceBars({ regs }: { regs: Registration[] }) {
   return (
     <div className="adm-bars">
-      <div className="adm-legend mono" aria-hidden="true">
-        <span>
-          <i className="paid" />
-          Pagas
-        </span>
-        <span>
-          <i className="pend" />
-          Pendentes
-        </span>
-        <span>
-          <i className="free" />
-          Vagas livres
-        </span>
-      </div>
       {RACES.map((race) => {
         const act = activeRegs(regs, race.id)
         const p = act.filter((r) => r.status === 'paga').length
@@ -574,7 +607,7 @@ function Registrations({ data }: { data: Collections }) {
           (!med || medKey(r) === med) &&
           (!needle ||
             (numeric
-              ? r.bib === Number(needle) || r.id.includes(needle) || r.phone.replace(/\D/g, '').includes(needle)
+              ? r.bib === Number(needle) || (needle.length > 3 && (r.id.includes(needle) || r.phone.replace(/\D/g, '').includes(needle)))
               : norm(`${r.first} ${r.last} ${r.email} ${r.id}`).includes(needle))),
       )
       .sort((a, b) => (asc ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt)))
@@ -705,11 +738,13 @@ function Registrations({ data }: { data: Collections }) {
                   <Fragment key={r.id}>
                     <tr className={`${r.status === 'cancelada' ? 'off' : ''}${isOpen ? ' adm-opened' : ''}`}>
                       <td>{r.id}</td>
-                      <td>
+                      <td className="adm-wrap">
                         <button type="button" className="adm-who" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : r.id)}>
                           {r.first} {r.last}
                         </button>
-                        <small>{r.email}</small>
+                        <small>
+                          <Email value={r.email} />
+                        </small>
                       </td>
                       <td>{raceById(r.race)?.name ?? r.race}</td>
                       <td>
@@ -770,7 +805,15 @@ function Registrations({ data }: { data: Collections }) {
 function PaymentCell({ p }: { p?: Payment }) {
   if (!p) return <span className="muted">Sem pedido</span>
   const detail =
-    p.method === 'multibanco' ? `${p.entity ?? '—'} · ${p.reference ?? '—'}` : p.method === 'mbway' ? p.phone ?? '' : p.last4 ? `•••• ${p.last4}` : ''
+    p.method === 'multibanco'
+      ? p.reference
+        ? `${p.entity ? `${p.entity} · ` : ''}${p.reference}`
+        : ''
+      : p.method === 'mbway'
+        ? p.phone ?? ''
+        : p.last4
+          ? `•••• ${p.last4}`
+          : ''
   return (
     <>
       <span>{METHOD[p.method]}</span>
@@ -1057,7 +1100,7 @@ function Lodging({ data }: { data: Collections }) {
                         {l ? <Link to={`/alojamento/${l.id}`}>{l.title}</Link> : b.listingId}
                         <small>{l ? `${l.village} · ${l.host}` : 'casa indisponível'}</small>
                       </td>
-                      <td>
+                      <td className="adm-wrap">
                         {b.nights.map(nightLabel).join(', ')}
                         {clash && (
                           <small>
@@ -1066,8 +1109,8 @@ function Lodging({ data }: { data: Collections }) {
                         )}
                       </td>
                       <td className="who">{b.name}</td>
-                      <td>
-                        <a href={`mailto:${b.email}`}>{b.email}</a>
+                      <td className="adm-wrap">
+                        <Email value={b.email} link />
                       </td>
                       <td className="num">{b.guests}</td>
                       <td className="num">{eur(b.totalEur)}</td>
@@ -1253,8 +1296,8 @@ function SafetyTab({ data }: { data: Collections }) {
                   <td className="who">{p.name}</td>
                   <td>{p.kind === 'empresa' ? 'Empresa' : 'Particular'}</td>
                   <td>{p.place}</td>
-                  <td>
-                    <a href={`mailto:${p.email}`}>{p.email}</a>
+                  <td className="adm-wrap">
+                    <Email value={p.email} link />
                   </td>
                   <td className="num">{eur(p.amountEur)}</td>
                 </tr>
@@ -1328,8 +1371,8 @@ function LeadTable({ leads, kind }: { leads: Lead[]; kind: Lead['kind'] }) {
               </td>
               <td>{(kind === 'parceiro' ? l.org : l.village) || '—'}</td>
               <td className="adm-wrap">{l.interest || '—'}</td>
-              <td>
-                <a href={`mailto:${l.email}`}>{l.email}</a>
+              <td className="adm-wrap">
+                <Email value={l.email} link />
               </td>
               <td>{l.phone ? <a href={`tel:${l.phone.replace(/\s/g, '')}`}>{l.phone}</a> : '—'}</td>
             </tr>
@@ -1365,6 +1408,14 @@ const KEY_LABEL: Record<Key, string> = {
   hosts: 'Anfitriões',
   pledges: 'Compromissos DAE',
   leads: 'Contactos',
+}
+
+const KEY_NOUN: Record<Key, string> = {
+  registrations: 'inscrições',
+  bookings: 'reservas',
+  hosts: 'anfitriões',
+  pledges: 'compromissos DAE',
+  leads: 'contactos',
 }
 
 const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x)
@@ -1441,8 +1492,8 @@ function DataTab({ data }: { data: Collections }) {
       setFlash({ tone: 'error', text: `Importação recusada. ${res.error}` })
       return
     }
-    const summary = KEYS.filter((k) => res.data[k]).map((k) => `${res.data[k]!.length} ${KEY_LABEL[k].toLowerCase()}`)
-    const missing = KEYS.filter((k) => !res.data[k]).map((k) => KEY_LABEL[k].toLowerCase())
+    const summary = KEYS.filter((k) => res.data[k]).map((k) => `${res.data[k]!.length} ${KEY_NOUN[k]}`)
+    const missing = KEYS.filter((k) => !res.data[k]).map((k) => KEY_NOUN[k])
     const warn = missing.length ? ` O ficheiro não traz ${listWords(missing)}: essas coleções ficam vazias.` : ''
     if (!window.confirm(`Importar ${file.name}: ${listWords(summary)}?${warn} Os dados atuais deste browser são substituídos.`)) return
     replaceAll(res.data)
