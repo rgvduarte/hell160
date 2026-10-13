@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { RACES, raceById } from '../data/event'
 import { EVENT_NIGHTS, FEATURES } from '../data/listings'
@@ -40,6 +40,14 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id']
 
 const REG_STATUS: Record<Registration['status'], string> = { pendente: 'Pendente', paga: 'Paga', cancelada: 'Cancelada' }
+// 'ativas' = pendente ou paga, para as contagens do Resumo baterem certo com a lista que o link abre
+const STATUS_FILTERS = [
+  ['', 'Todos'],
+  ['ativas', 'Ativas (pendente ou paga)'],
+  ['pendente', 'Pendente'],
+  ['paga', 'Paga'],
+  ['cancelada', 'Cancelada'],
+] as const
 const BOOKING_STATUS: Record<Booking['status'], string> = { pedido: 'Pedido', confirmado: 'Confirmada', recusado: 'Recusada', cancelado: 'Cancelada' }
 const HOST_STATUS: Record<HostApplication['status'], string> = { pendente: 'Por decidir', aprovado: 'Aprovada', recusado: 'Recusada' }
 const METHOD: Record<Payment['method'], string> = { mbway: 'MB WAY', multibanco: 'Multibanco', cartao: 'Cartão' }
@@ -57,6 +65,9 @@ const MED_FILTERS = [
   ['validado', 'Validado'],
   ['recusado', 'Recusado'],
 ] as const
+// Dormir na aldeia (Stay.tsx) abre filtrada por ar condicionado, 2 pessoas e preço até 80 € por noite.
+const STAY_MAX_EUR = 80
+
 const medKey = (r: Registration) => (!r.medical ? 'sem' : r.medical.status === 'em validação' ? 'validacao' : r.medical.status)
 
 // ---------- utilitários locais ----------
@@ -68,6 +79,24 @@ const nowISO = () => new Date().toISOString()
 const nightLabel = (iso: string) => EVENT_NIGHTS.find((n) => n.iso === iso)?.label ?? iso
 const listWords = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} e ${xs[xs.length - 1]}`)
 const featureLabel = (f: string) => (FEATURES as Record<string, string>)[f] ?? f
+
+// Uma ação muda a linha (os botões mudam ou desaparecem). Um duplo clique ou dois toques rápidos não podem
+// cair no botão que ficou por baixo do cursor e atuar sobre outro registo.
+function useActGuard(ms = 450) {
+  const last = useRef(0)
+  return useCallback(
+    (e: { detail: number }, fn: () => void) => {
+      if (e.detail > 1) return
+      const now = Date.now()
+      if (now - last.current < ms) return
+      last.current = now
+      fn()
+    },
+    [ms],
+  )
+}
+
+const addTo = (s: ReadonlySet<string>, id: string): ReadonlySet<string> => (s.has(id) ? s : new Set(s).add(id))
 
 function stamp() {
   const d = new Date()
@@ -128,7 +157,9 @@ function SectionHead({ title, children }: { title: string; children?: ReactNode 
 }
 
 // Emails longos partem antes do @ para as tabelas caberem no ecrã.
-function Email({ value, link = false }: { value: string; link?: boolean }) {
+function Email({ value: raw, link = false }: { value?: string; link?: boolean }) {
+  const value = raw ?? ''
+  if (!value) return <>—</>
   const at = value.indexOf('@')
   const body =
     at > 0 ? (
@@ -242,7 +273,9 @@ function Console({ onExit }: { onExit: () => void }) {
     alojamento: data.bookings.filter((b) => b.status === 'pedido').length + data.hosts.filter((h) => h.status === 'pendente').length,
   }
 
-  const go = (id: TabId) => setParams({ tab: id })
+  const go = (id: TabId) => {
+    if (id !== tab) setParams({ tab: id })
+  }
 
   function onKey(e: KeyboardEvent<HTMLDivElement>) {
     // parte do separador com foco: o estado do router pode ainda não ter mudado entre duas teclas rápidas
@@ -336,13 +369,13 @@ function Overview({ data }: { data: Collections }) {
   const recent = [...regs].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6)
 
   const todo: { n: number; text: string; to: string; urgent?: boolean }[] = [
-    { n: medPending, text: `${medPending === 1 ? 'atestado' : 'atestados'} por validar`, to: '?tab=inscricoes&atestado=validacao', urgent: true },
+    { n: medPending, text: `${medPending === 1 ? 'atestado' : 'atestados'} por validar`, to: '?tab=inscricoes&estado=ativas&atestado=validacao', urgent: true },
     { n: conflicts, text: `${conflicts === 1 ? 'pedido de reserva' : 'pedidos de reserva'} sobre noites já confirmadas`, to: '?tab=alojamento', urgent: true },
     { n: bookingsPending.length, text: `${bookingsPending.length === 1 ? 'reserva' : 'reservas'} por confirmar`, to: '?tab=alojamento' },
     { n: hostsPending, text: `${hostsPending === 1 ? 'anfitrião' : 'anfitriões'} por aprovar`, to: '?tab=alojamento' },
     { n: pending.length, text: `${pending.length === 1 ? 'inscrição' : 'inscrições'} por pagar`, to: '?tab=inscricoes&estado=pendente' },
     { n: paidNoMed, text: `${paidNoMed === 1 ? 'inscrição paga' : 'inscrições pagas'} sem atestado enviado`, to: '?tab=inscricoes&estado=paga&atestado=sem' },
-    { n: medRefused, text: `${medRefused === 1 ? 'atestado recusado' : 'atestados recusados'}, à espera de novo envio`, to: '?tab=inscricoes&atestado=recusado' },
+    { n: medRefused, text: `${medRefused === 1 ? 'atestado recusado' : 'atestados recusados'}, à espera de novo envio`, to: '?tab=inscricoes&estado=ativas&atestado=recusado' },
     { n: training, text: `${training === 1 ? 'pedido' : 'pedidos'} de formação`, to: '?tab=seguranca' },
     { n: partners, text: `${partners === 1 ? 'contacto' : 'contactos'} de parceiros`, to: '?tab=parceiros' },
   ].filter((t) => t.n > 0)
@@ -503,7 +536,7 @@ function RaceBars({ regs }: { regs: Registration[] }) {
         const cap = race.places ?? Math.max(act.length, 1)
         const free = race.places == null ? null : Math.max(0, race.places - act.length)
         const w = (n: number) => `${Math.min(100, (n / cap) * 100)}%`
-        const desc = `${race.name}: ${p} pagas, ${q} pendentes${free != null ? `, ${free} vagas livres de ${race.places}` : ''}`
+        const desc = `${race.name}: ${plural(p, 'paga', 'pagas')}, ${plural(q, 'pendente', 'pendentes')}${free != null ? `, ${plural(free, 'vaga livre', 'vagas livres')} de ${race.places}` : ''}`
         return (
           <div className="adm-bar" key={race.id}>
             <div className="adm-bar-head">
@@ -517,9 +550,9 @@ function RaceBars({ regs }: { regs: Registration[] }) {
               {q > 0 && <span className="pend" style={{ width: w(q) }} />}
             </div>
             <div className="adm-bar-foot mono muted">
-              <span>{p} pagas</span>
-              <span>{q} pendentes</span>
-              {free != null && <span>{free} livres</span>}
+              <span>{plural(p, 'paga', 'pagas')}</span>
+              <span>{plural(q, 'pendente', 'pendentes')}</span>
+              {free != null && <span>{plural(free, 'livre', 'livres')}</span>}
               <span>{Math.round((act.length / cap) * 100)} % ocupado</span>
             </div>
           </div>
@@ -579,47 +612,85 @@ function regCSV(r: Registration, hosts: HostApplication[]) {
 const FILTER_KEYS = ['q', 'prova', 'estado', 'atestado', 'ordem'] as const
 type RegFilters = Record<(typeof FILTER_KEYS)[number], string>
 
+// Só aceita do URL valores que os filtros conhecem: um ?estado=xyz não pode esvaziar a tabela com os seletores em "Todos".
+function readRegFilters(p: URLSearchParams): RegFilters {
+  const pick = (v: string | null, ok: readonly string[]) => (v && ok.includes(v) ? v : '')
+  return {
+    q: p.get('q') ?? '',
+    prova: pick(p.get('prova'), RACES.map((r) => r.id)),
+    estado: pick(p.get('estado'), STATUS_FILTERS.map(([v]) => v)),
+    atestado: pick(p.get('atestado'), MED_FILTERS.map(([v]) => v)),
+    ordem: pick(p.get('ordem'), ['asc']),
+  }
+}
+
+function writeRegFilters(f: RegFilters) {
+  const next = new URLSearchParams({ tab: 'inscricoes' })
+  for (const k of FILTER_KEYS) if (f[k]) next.set(k, f[k])
+  return next.toString()
+}
+
+const sameFilters = (a: RegFilters, b: RegFilters) => FILTER_KEYS.every((k) => a[k] === b[k])
+
 function Registrations({ data }: { data: Collections }) {
   const [params, setParams] = useSearchParams()
   // Os filtros vivem em estado local (resposta imediata ao escrever) e são espelhados no URL sem criar entradas no histórico.
-  const [f, setF] = useState<RegFilters>(() => Object.fromEntries(FILTER_KEYS.map((k) => [k, params.get(k) ?? ''])) as RegFilters)
+  const [f, setF] = useState<RegFilters>(() => readRegFilters(params))
   const [open, setOpen] = useState<string | null>(null)
   const [flash, setFlash] = useState<Flash>(null)
+  // Linhas em que o organizador acabou de atuar: ficam à vista até os filtros mudarem, para a linha seguinte
+  // não subir para debaixo do cursor.
+  const [touched, setTouched] = useState<ReadonlySet<string>>(() => new Set())
+  const act = useActGuard()
+  const written = useRef<string | null>(null)
   const { q, prova: race, estado: status, atestado: med } = f
   const asc = f.ordem === 'asc'
   const set = (key: keyof RegFilters, value: string) => setF((x) => ({ ...x, [key]: value }))
+  const keep = (id: string) => setTouched((s) => addTo(s, id))
 
+  // filtros → URL
   useEffect(() => {
-    const next = new URLSearchParams({ tab: 'inscricoes' })
-    for (const k of FILTER_KEYS) if (f[k]) next.set(k, f[k])
-    if (next.toString() !== window.location.search.replace(/^\?/, '')) setParams(next, { replace: true })
+    const next = writeRegFilters(f)
+    written.current = next
+    if (next !== params.toString()) setParams(next, { replace: true })
+    setTouched((s) => (s.size ? new Set() : s))
     // depende só dos filtros: setParams muda de identidade a cada navegação
   }, [f])
 
-  const rows = useMemo(() => {
+  // URL → filtros (Recuar/Avançar do browser, ou um link para outra combinação de filtros)
+  const qs = params.toString()
+  useEffect(() => {
+    if (qs === written.current) return
+    const next = readRegFilters(params)
+    setF((cur) => (sameFilters(cur, next) ? cur : next))
+  }, [qs])
+
+  const { rows, matched } = useMemo(() => {
     const needle = norm(q.trim().replace(/^#/, ''))
     const numeric = /^\d+$/.test(needle)
-    return data.registrations
-      .filter(
-        (r) =>
-          (!race || r.race === race) &&
-          (!status || r.status === status) &&
-          (!med || medKey(r) === med) &&
-          (!needle ||
-            (numeric
-              ? r.bib === Number(needle) || (needle.length > 3 && (r.id.includes(needle) || r.phone.replace(/\D/g, '').includes(needle)))
-              : norm(`${r.first} ${r.last} ${r.email} ${r.id}`).includes(needle))),
-      )
+    const match = (r: Registration) =>
+      (!race || r.race === race) &&
+      (!status || (status === 'ativas' ? r.status !== 'cancelada' : r.status === status)) &&
+      (!med || medKey(r) === med) &&
+      (!needle ||
+        (numeric
+          ? r.bib === Number(needle) || (needle.length > 3 && (r.id.includes(needle) || (r.phone ?? '').replace(/\D/g, '').includes(needle)))
+          : norm(`${r.first} ${r.last} ${r.email} ${r.id}`).includes(needle)))
+    const rows = data.registrations
+      .filter((r) => match(r) || touched.has(r.id))
       .sort((a, b) => (asc ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt)))
-  }, [data.registrations, q, race, status, med, asc])
+    return { rows, matched: rows.filter(match) }
+  }, [data.registrations, q, race, status, med, asc, touched])
 
   const filtered = !!(q || race || status || med)
+  const kept = rows.length - matched.length
 
   function clear() {
     setF((x) => ({ q: '', prova: '', estado: '', atestado: '', ordem: x.ordem }))
   }
 
   function pay(r: Registration) {
+    keep(r.id)
     markPaid(r.id)
     const bib = getAll().registrations.find((x) => x.id === r.id)?.bib
     setFlash({ tone: 'ok', text: `${r.id} marcada como paga (${eur(r.priceEur)}). Dorsal atribuído: ${bib}.` })
@@ -627,6 +698,7 @@ function Registrations({ data }: { data: Collections }) {
 
   function setMedical(r: Registration, next: MedicalCert['status']) {
     if (!r.medical) return
+    keep(r.id)
     update('registrations', r.id, { medical: { ...r.medical, status: next } })
     const verb = next === 'validado' ? 'validado' : next === 'recusado' ? 'recusado' : 'reposto em validação'
     setFlash({ tone: next === 'recusado' ? 'error' : 'ok', text: `Atestado de ${r.first} ${r.last} ${verb}.` })
@@ -638,6 +710,7 @@ function Registrations({ data }: { data: Collections }) {
         ? ` Está paga (${eur(r.priceEur)}): o reembolso faz-se fora da plataforma. O dorsal ${r.bib} não volta a ser atribuído.`
         : ''
     if (!window.confirm(`Cancelar a inscrição ${r.id} de ${r.first} ${r.last}?${extra} A vaga fica livre.`)) return
+    keep(r.id)
     update('registrations', r.id, { status: 'cancelada' })
     setFlash({ tone: 'ok', text: `${r.id} cancelada. A vaga voltou a ficar disponível.` })
   }
@@ -663,10 +736,9 @@ function Registrations({ data }: { data: Collections }) {
         <div className="field">
           <label htmlFor="adm-status">Estado</label>
           <select id="adm-status" value={status} onChange={(e) => set('estado', e.target.value)}>
-            <option value="">Todos</option>
-            {(Object.keys(REG_STATUS) as Registration['status'][]).map((s) => (
-              <option key={s} value={s}>
-                {REG_STATUS[s]}
+            {STATUS_FILTERS.map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
               </option>
             ))}
           </select>
@@ -685,7 +757,8 @@ function Registrations({ data }: { data: Collections }) {
 
       <div className="adm-count">
         <p className="mono" aria-live="polite" style={{ margin: 0 }}>
-          {rows.length} de {plural(data.registrations.length, 'inscrição', 'inscrições')}
+          {matched.length} de {plural(data.registrations.length, 'inscrição', 'inscrições')}
+          {kept > 0 && ` · ${plural(kept, 'tratada', 'tratadas')} agora, à vista até mudares os filtros`}
           {filtered && (
             <>
               {' · '}
@@ -698,10 +771,10 @@ function Registrations({ data }: { data: Collections }) {
         <button
           type="button"
           className="btn small ghost noarrow"
-          disabled={!rows.length}
-          onClick={() => exportCSV('inscricoes', rows.map((r) => regCSV(r, data.hosts)))}
+          disabled={!matched.length}
+          onClick={() => exportCSV('inscricoes', matched.map((r) => regCSV(r, data.hosts)))}
         >
-          Exportar CSV · {rows.length}
+          Exportar CSV · {matched.length}
         </button>
       </div>
 
@@ -734,9 +807,10 @@ function Registrations({ data }: { data: Collections }) {
             <tbody>
               {rows.map((r) => {
                 const isOpen = open === r.id
+                const cls = [r.status === 'cancelada' && 'off', isOpen && 'adm-opened', touched.has(r.id) && 'adm-kept'].filter(Boolean).join(' ')
                 return (
                   <Fragment key={r.id}>
-                    <tr className={`${r.status === 'cancelada' ? 'off' : ''}${isOpen ? ' adm-opened' : ''}`}>
+                    <tr className={cls || undefined}>
                       <td>{r.id}</td>
                       <td className="adm-wrap">
                         <button type="button" className="adm-who" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : r.id)}>
@@ -755,10 +829,10 @@ function Registrations({ data }: { data: Collections }) {
                         <MedTag med={r.medical} />
                         {r.medical?.status === 'em validação' && r.status !== 'cancelada' && (
                           <div className="adm-acts mt-s" style={{ marginTop: 8 }}>
-                            <button type="button" className="chip adm-act go" title="Validar atestado" onClick={() => setMedical(r, 'validado')}>
+                            <button type="button" className="chip adm-act go" title="Validar atestado" onClick={(e) => act(e, () => setMedical(r, 'validado'))}>
                               Validar atestado
                             </button>
-                            <button type="button" className="chip adm-act danger" title="Recusar atestado" onClick={() => setMedical(r, 'recusado')}>
+                            <button type="button" className="chip adm-act danger" title="Recusar atestado" onClick={(e) => act(e, () => setMedical(r, 'recusado'))}>
                               Recusar atestado
                             </button>
                           </div>
@@ -772,12 +846,12 @@ function Registrations({ data }: { data: Collections }) {
                       <td>
                         <div className="adm-acts">
                           {r.status === 'pendente' && (
-                            <button type="button" className="chip adm-act go" onClick={() => pay(r)}>
+                            <button type="button" className="chip adm-act go" onClick={(e) => act(e, () => pay(r))}>
                               Marcar paga
                             </button>
                           )}
                           {r.status !== 'cancelada' && (
-                            <button type="button" className="chip adm-act" onClick={() => cancel(r)}>
+                            <button type="button" className="chip adm-act" onClick={(e) => act(e, () => cancel(r))}>
                               Cancelar
                             </button>
                           )}
@@ -787,7 +861,7 @@ function Registrations({ data }: { data: Collections }) {
                     {isOpen && (
                       <tr className="adm-detail">
                         <td colSpan={10}>
-                          <RegDetail r={r} hosts={data.hosts} onMedical={(s) => setMedical(r, s)} />
+                          <RegDetail r={r} hosts={data.hosts} onMedical={(e, s) => act(e, () => setMedical(r, s))} />
                         </td>
                       </tr>
                     )}
@@ -823,14 +897,14 @@ function PaymentCell({ p }: { p?: Payment }) {
   )
 }
 
-function RegDetail({ r, hosts, onMedical }: { r: Registration; hosts: HostApplication[]; onMedical: (s: MedicalCert['status']) => void }) {
+function RegDetail({ r, hosts, onMedical }: { r: Registration; hosts: HostApplication[]; onMedical: (e: { detail: number }, s: MedicalCert['status']) => void }) {
   const stay = r.stayId ? findListing(r.stayId, hosts) : undefined
   return (
     <div className="adm-detail-grid">
       <dl className="kv adm-kv">
         <dt>Telefone</dt>
         <dd>
-          <a href={`tel:${r.phone.replace(/\s/g, '')}`}>{r.phone}</a>
+          {r.phone ? <a href={`tel:${r.phone.replace(/\s/g, '')}`}>{r.phone}</a> : '—'}
         </dd>
         <dt>Nascimento</dt>
         <dd>{r.birth || '—'}</dd>
@@ -860,7 +934,7 @@ function RegDetail({ r, hosts, onMedical }: { r: Registration; hosts: HostApplic
               {r.medical.status !== 'em validação' && r.status !== 'cancelada' && (
                 <>
                   {' · '}
-                  <button type="button" className="adm-link" onClick={() => onMedical('em validação')}>
+                  <button type="button" className="adm-link" onClick={(e) => onMedical(e, 'em validação')}>
                     Repor em validação
                   </button>
                 </>
@@ -870,7 +944,7 @@ function RegDetail({ r, hosts, onMedical }: { r: Registration; hosts: HostApplic
             'Ainda não enviado'
           )}
         </dd>
-        <dt>Pedido pagamento</dt>
+        <dt>Pedido de pagamento</dt>
         <dd>{r.payment ? fmtDate(r.payment.requestedAt) : '—'}</dd>
         <dt>Simulação</dt>
         <dd className="muted">O ficheiro do atestado não é guardado; só o nome e o estado.</dd>
@@ -902,23 +976,75 @@ function bookingCSV(b: Booking, hosts: HostApplication[]) {
   }
 }
 
+// O que impede uma casa aprovada de aparecer na lista de Dormir na aldeia com os filtros por omissão.
+function listVisibility(h: HostApplication): ReactNode {
+  const l = hostToListing(h)
+  if (h.eurNight > STAY_MAX_EUR)
+    return (
+      <>
+        Não aparece na lista de Dormir na aldeia: custa {eur(h.eurNight)} por noite e o filtro de preço vai até {eur(STAY_MAX_EUR)}. A{' '}
+        <Link to={`/alojamento/${l.id}`}>página da casa</Link> funciona.
+      </>
+    )
+  const off: string[] = []
+  const query = new URLSearchParams()
+  if (!h.features.includes('ac')) {
+    off.push(`com o filtro ${featureLabel('ac')} desligado`)
+    query.set('precisa', '')
+  }
+  if (h.sleeps < 2) {
+    off.push('com 1 pessoa no filtro de pessoas')
+    query.set('pessoas', '1')
+  }
+  if (!off.length)
+    return (
+      <>
+        Já aparece em <Link to="/alojamento">Dormir na aldeia</Link>.
+      </>
+    )
+  return (
+    <>
+      Em Dormir na aldeia só aparece {listWords(off)} (a lista abre a pedir {featureLabel('ac').toLowerCase()}):{' '}
+      <Link to={`/alojamento?${query.toString()}`}>ver na lista</Link> ou <Link to={`/alojamento/${l.id}`}>página da casa</Link>.
+    </>
+  )
+}
+
 function Lodging({ data }: { data: Collections }) {
   const { hosts, bookings } = data
   const [flash, setFlash] = useState<Flash>(null)
   const [filter, setFilter] = useState<'' | Booking['status']>('')
+  // Candidaturas e reservas decididas agora ficam no mesmo sítio, com o novo estado, até sair do separador
+  // (anfitriões) ou mudar o filtro (reservas). Assim um segundo clique não cai no registo seguinte.
+  const [shownHosts, setShownHosts] = useState<ReadonlySet<string>>(() => new Set())
+  const [shownBookings, setShownBookings] = useState<ReadonlySet<string>>(() => new Set())
+  const act = useActGuard()
 
-  const pendingHosts = hosts.filter((h) => h.status === 'pendente').sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-  const decidedHosts = hosts.filter((h) => h.status !== 'pendente').sort((a, b) => (b.decidedAt ?? '').localeCompare(a.decidedAt ?? ''))
-  const list = bookings.filter((b) => !filter || b.status === filter).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  const pendingHosts = hosts.filter((h) => h.status === 'pendente' || shownHosts.has(h.id)).sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  const waiting = pendingHosts.filter((h) => h.status === 'pendente').length
+  const decidedHosts = hosts
+    .filter((h) => h.status !== 'pendente' && !shownHosts.has(h.id))
+    .sort((a, b) => (b.decidedAt ?? '').localeCompare(a.decidedAt ?? ''))
+  const list = bookings.filter((b) => !filter || b.status === filter || shownBookings.has(b.id)).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  const listMatched = list.filter((b) => !filter || b.status === filter)
+
+  const keepHost = (id: string) => setShownHosts((s) => addTo(s, id))
+  const keepBooking = (id: string) => setShownBookings((s) => addTo(s, id))
+
+  function changeFilter(next: '' | Booking['status']) {
+    setFilter(next)
+    setShownBookings(new Set())
+  }
 
   function approve(h: HostApplication) {
+    keepHost(h.id)
     update('hosts', h.id, { status: 'aprovado', decidedAt: nowISO() })
     const l = hostToListing(h)
     setFlash({
       tone: 'ok',
       text: (
         <>
-          {l.title} ({h.village}) aprovada. Já aparece em <Link to={`/alojamento/${l.id}`}>Dormir na aldeia</Link>.
+          {l.title} ({h.village}) aprovada e publicada. {listVisibility(h)}
         </>
       ),
     })
@@ -926,6 +1052,7 @@ function Lodging({ data }: { data: Collections }) {
 
   function refuse(h: HostApplication) {
     if (!window.confirm(`Recusar a candidatura de ${h.name} (${h.village})?`)) return
+    keepHost(h.id)
     update('hosts', h.id, { status: 'recusado', decidedAt: nowISO() })
     setFlash({ tone: 'ok', text: `Candidatura de ${h.name} recusada.` })
   }
@@ -937,6 +1064,8 @@ function Lodging({ data }: { data: Collections }) {
 
   function confirmBooking(b: Booking) {
     const { bookings: all, hosts: hs } = getAll()
+    const current = all.find((o) => o.id === b.id)
+    if (current && current.status !== 'pedido') return
     const listing = findListing(b.listingId, hs)
     const title = listing?.title ?? b.listingId
     const taken = takenNights(b.listingId, all)
@@ -955,6 +1084,7 @@ function Lodging({ data }: { data: Collections }) {
       setFlash({ tone: 'error', text: `Não é possível confirmar ${b.id}: a casa ${b.listingId} já não está publicada.` })
       return
     }
+    keepBooking(b.id)
     update('bookings', b.id, { status: 'confirmado', decidedAt: nowISO() })
     const now = all.filter((o) => o.id !== b.id && o.status === 'pedido' && o.listingId === b.listingId && o.nights.some((n) => b.nights.includes(n)))
     setFlash({
@@ -969,12 +1099,14 @@ function Lodging({ data }: { data: Collections }) {
 
   function refuseBooking(b: Booking) {
     if (!window.confirm(`Recusar o pedido ${b.id} de ${b.name}?`)) return
+    keepBooking(b.id)
     update('bookings', b.id, { status: 'recusado', decidedAt: nowISO() })
     setFlash({ tone: 'ok', text: `Pedido ${b.id} recusado.` })
   }
 
   function cancelBooking(b: Booking) {
     if (!window.confirm(`Cancelar a reserva confirmada ${b.id} de ${b.name}? As noites voltam a ficar livres.`)) return
+    keepBooking(b.id)
     update('bookings', b.id, { status: 'cancelado', decidedAt: nowISO() })
     setFlash({ tone: 'ok', text: `Reserva ${b.id} cancelada. As noites voltaram a ficar livres.` })
   }
@@ -984,15 +1116,24 @@ function Lodging({ data }: { data: Collections }) {
       <FlashNote flash={flash} onClose={() => setFlash(null)} />
 
       <SectionHead title="Anfitriões">
-        <span className="mono muted">{plural(pendingHosts.length, 'candidatura por decidir', 'candidaturas por decidir')}</span>
+        <span className="mono muted">{plural(waiting, 'candidatura por decidir', 'candidaturas por decidir')}</span>
       </SectionHead>
-      <p className="muted adm-intro">Ao aprovar, a casa entra logo em Dormir na aldeia e pode receber pedidos.</p>
+      <p className="muted adm-intro">
+        Ao aprovar, a casa fica publicada e pode receber pedidos. A lista de Dormir na aldeia abre filtrada por ar condicionado: casas sem ar
+        condicionado só aparecem com esse filtro desligado.
+      </p>
       {pendingHosts.length === 0 ? (
         <p className="adm-empty">Nenhuma candidatura por decidir.</p>
       ) : (
         <div className="adm-apps">
           {pendingHosts.map((h) => (
-            <HostApp key={h.id} h={h} onApprove={() => approve(h)} onRefuse={() => refuse(h)} />
+            <HostApp
+              key={h.id}
+              h={h}
+              onApprove={(e) => act(e, () => approve(h))}
+              onRefuse={(e) => act(e, () => refuse(h))}
+              onReopen={(e) => act(e, () => reopen(h))}
+            />
           ))}
         </div>
       )}
@@ -1030,7 +1171,7 @@ function Lodging({ data }: { data: Collections }) {
                         {h.status === 'aprovado' ? (
                           <Link to={`/alojamento/${l.id}`}>Ver casa</Link>
                         ) : (
-                          <button type="button" className="chip adm-act" onClick={() => reopen(h)}>
+                          <button type="button" className="chip adm-act" onClick={(e) => act(e, () => reopen(h))}>
                             Reconsiderar
                           </button>
                         )}
@@ -1048,7 +1189,7 @@ function Lodging({ data }: { data: Collections }) {
         <SectionHead title="Reservas">
           <div className="field adm-inline">
             <label htmlFor="adm-bk">Estado</label>
-            <select id="adm-bk" value={filter} onChange={(e) => setFilter(e.target.value as '' | Booking['status'])}>
+            <select id="adm-bk" value={filter} onChange={(e) => changeFilter(e.target.value as '' | Booking['status'])}>
               <option value="">Todas</option>
               {(Object.keys(BOOKING_STATUS) as Booking['status'][]).map((s) => (
                 <option key={s} value={s}>
@@ -1060,14 +1201,15 @@ function Lodging({ data }: { data: Collections }) {
           <button
             type="button"
             className="btn small ghost noarrow"
-            disabled={!list.length}
-            onClick={() => exportCSV('reservas', list.map((b) => bookingCSV(b, hosts)))}
+            disabled={!listMatched.length}
+            onClick={() => exportCSV('reservas', listMatched.map((b) => bookingCSV(b, hosts)))}
           >
-            Exportar CSV · {list.length}
+            Exportar CSV · {listMatched.length}
           </button>
         </SectionHead>
         <p className="muted adm-intro">
           Confirmar bloqueia as noites da casa. Um pedido sobre noites já confirmadas não pode ser confirmado.
+          {list.length > listMatched.length && ` ${plural(list.length - listMatched.length, 'reserva tratada', 'reservas tratadas')} agora fica à vista até mudares o filtro.`}
         </p>
         {list.length === 0 ? (
           <p className="adm-empty">{bookings.length ? 'Nenhuma reserva neste estado.' : 'Ainda não há pedidos de reserva.'}</p>
@@ -1093,8 +1235,9 @@ function Lodging({ data }: { data: Collections }) {
                   const l = findListing(b.listingId, hosts)
                   const taken = takenNights(b.listingId, bookings)
                   const clash = b.status === 'pedido' && b.nights.some((n) => taken.has(n))
+                  const cls = [(b.status === 'recusado' || b.status === 'cancelado') && 'off', shownBookings.has(b.id) && 'adm-kept'].filter(Boolean).join(' ')
                   return (
-                    <tr key={b.id} className={b.status === 'recusado' || b.status === 'cancelado' ? 'off' : undefined}>
+                    <tr key={b.id} className={cls || undefined}>
                       <td>{b.id}</td>
                       <td className="who">
                         {l ? <Link to={`/alojamento/${l.id}`}>{l.title}</Link> : b.listingId}
@@ -1124,16 +1267,16 @@ function Lodging({ data }: { data: Collections }) {
                         <div className="adm-acts">
                           {b.status === 'pedido' && (
                             <>
-                              <button type="button" className="chip adm-act go" onClick={() => confirmBooking(b)}>
+                              <button type="button" className="chip adm-act go" onClick={(e) => act(e, () => confirmBooking(b))}>
                                 Confirmar
                               </button>
-                              <button type="button" className="chip adm-act danger" onClick={() => refuseBooking(b)}>
+                              <button type="button" className="chip adm-act danger" onClick={(e) => act(e, () => refuseBooking(b))}>
                                 Recusar
                               </button>
                             </>
                           )}
                           {b.status === 'confirmado' && (
-                            <button type="button" className="chip adm-act" onClick={() => cancelBooking(b)}>
+                            <button type="button" className="chip adm-act" onClick={(e) => act(e, () => cancelBooking(b))}>
                               Cancelar
                             </button>
                           )}
@@ -1151,18 +1294,22 @@ function Lodging({ data }: { data: Collections }) {
   )
 }
 
-function HostApp({ h, onApprove, onRefuse }: { h: HostApplication; onApprove: () => void; onRefuse: () => void }) {
-  const title = hostToListing(h).title
+type Click = { detail: number }
+
+function HostApp({ h, onApprove, onRefuse, onReopen }: { h: HostApplication; onApprove: (e: Click) => void; onRefuse: (e: Click) => void; onReopen: (e: Click) => void }) {
+  const l = hostToListing(h)
+  const title = l.title
   const weekend = Math.round(h.eurNight * 3)
+  const decided = h.status !== 'pendente'
   return (
-    <article className="adm-app">
+    <article className={`adm-app${decided ? ' adm-decided' : ''}`}>
       <div>
         <p className="mono muted" style={{ margin: 0 }}>
           {h.id} · {fmtDate(h.createdAt)}
         </p>
         <h3 className="cond adm-app-title">{title}</h3>
         <p style={{ margin: '6px 0 0' }}>
-          {h.village} · {h.address}
+          {h.village} · {h.address || '—'}
         </p>
         {!h.features.includes('ac') && (
           <p className="mt-s" style={{ marginBottom: 0 }}>
@@ -1176,10 +1323,12 @@ function HostApp({ h, onApprove, onRefuse }: { h: HostApplication; onApprove: ()
           <dd>{h.name}</dd>
           <dt>Telefone</dt>
           <dd>
-            <a href={`tel:${h.phone.replace(/\s/g, '')}`}>{h.phone}</a>
+            {h.phone ? <a href={`tel:${h.phone.replace(/\s/g, '')}`}>{h.phone}</a> : '—'}
           </dd>
           <dt>Email</dt>
-          <dd>{h.email ? <a href={`mailto:${h.email}`}>{h.email}</a> : '—'}</dd>
+          <dd>
+            <Email value={h.email} link />
+          </dd>
           <dt>Capacidade</dt>
           <dd>
             {h.sleeps} pessoas · {plural(h.bedrooms, 'quarto', 'quartos')}
@@ -1189,20 +1338,39 @@ function HostApp({ h, onApprove, onRefuse }: { h: HostApplication; onApprove: ()
             {eur(h.eurNight)} / noite · {eur(weekend)} por 3 noites
           </dd>
           <dt>Estado</dt>
-          <dd>{HOUSE_STATE[h.state] ?? h.state}</dd>
+          <dd>{HOUSE_STATE[h.state] ?? h.state ?? '—'}</dd>
           <dt>Tem</dt>
           <dd>{h.features.length ? h.features.map(featureLabel).join(', ') : '—'}</dd>
         </dl>
         {h.note && <p className="adm-note">{h.note}</p>}
       </div>
-      <div className="adm-app-acts">
-        <button type="button" className="btn small" onClick={onApprove}>
-          Aprovar
-        </button>
-        <button type="button" className="btn small ghost noarrow" onClick={onRefuse}>
-          Recusar
-        </button>
-      </div>
+      {decided ? (
+        // O estado ocupa o lugar do botão Aprovar: um segundo clique cai em texto, não noutra ação.
+        <div className="adm-app-acts adm-app-done" aria-live="polite">
+          <p className="adm-app-state">
+            <span className={h.status === 'aprovado' ? 'tag solid' : 'tag adm-dim'}>{HOST_STATUS[h.status]}</span>
+            {h.decidedAt && <small className="mono muted">{fmtDate(h.decidedAt)}</small>}
+          </p>
+          {h.status === 'aprovado' ? (
+            <Link className="mono" to={`/alojamento/${l.id}`}>
+              Ver casa
+            </Link>
+          ) : (
+            <button type="button" className="chip adm-act" onClick={onReopen}>
+              Reconsiderar
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="adm-app-acts">
+          <button type="button" className="btn small" onClick={onApprove}>
+            Aprovar
+          </button>
+          <button type="button" className="btn small ghost noarrow" onClick={onRefuse}>
+            Recusar
+          </button>
+        </div>
+      )}
     </article>
   )
 }
