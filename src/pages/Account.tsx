@@ -161,10 +161,18 @@ export function Account() {
     setSessionEmail(res.email)
   }
 
-  if (session) return <Dashboard email={session} data={data} linkError={linkError} onDismiss={() => setLinkError(null)} />
+  function logout() {
+    setForm({ email: '', ref: '' })
+    setError(null)
+    setLinkError(null)
+    setSessionEmail(null)
+  }
+
+  if (session)
+    return <Dashboard email={session} data={data} linkError={linkError} onDismiss={() => setLinkError(null)} onLogout={logout} />
 
   return (
-    <section className="sec tight acc-page">
+    <section className="sec tight acc-page no-reveal">
       <div className="wrap">
         <p className="eyebrow">Área do atleta</p>
         <h1 className="display acc-hello">Entrar</h1>
@@ -228,7 +236,13 @@ export function Account() {
 
 // ---------- área pessoal ----------
 
-function Dashboard({ email, data, linkError, onDismiss }: { email: string; data: Collections; linkError: string | null; onDismiss: () => void }) {
+function Dashboard({ email, data, linkError, onDismiss, onLogout }: {
+  email: string
+  data: Collections
+  linkError: string | null
+  onDismiss: () => void
+  onLogout: () => void
+}) {
   const [printId, setPrintId] = useState<string | null>(null)
   const regs = data.registrations.filter((r) => sameEmail(r.email, email)).sort(newestFirst)
   const books = data.bookings.filter((b) => sameEmail(b.email, email)).sort(newestFirst)
@@ -255,7 +269,7 @@ function Dashboard({ email, data, linkError, onDismiss }: { email: string; data:
   const printReg = printId ? regs.find((r) => r.id === printId && r.status === 'paga') : undefined
 
   return (
-    <div className={`acc-page${printReg ? ' printing' : ''}`}>
+    <div className={`acc-page no-reveal${printReg ? ' printing' : ''}`}>
       <div className="acc-screen">
         <section className="sec tight">
           <div className="wrap">
@@ -273,7 +287,7 @@ function Dashboard({ email, data, linkError, onDismiss }: { email: string; data:
               <div className="acc-who">
                 <span className="mono muted">Sessão</span>
                 <span className="acc-email">{email}</span>
-                <button className="btn small ghost noarrow" onClick={() => setSessionEmail(null)}>Sair</button>
+                <button className="btn small ghost noarrow" onClick={onLogout}>Sair</button>
               </div>
             </div>
             <div className="stats acc-stats mt-l">
@@ -282,8 +296,10 @@ function Dashboard({ email, data, linkError, onDismiss }: { email: string; data:
               <div>
                 {nextStart ? (
                   <><b>{Math.max(0, daysUntil(nextStart))}</b><span>Dias até à partida</span></>
+                ) : active.length > 0 ? (
+                  <><b>fev</b><span>Bike · dia a anunciar</span></>
                 ) : (
-                  <><b>{EVENT.edition}</b><span>Datas a confirmar</span></>
+                  <><b>{Math.max(0, daysUntil(EVENT.startISO))}</b><span>Dias até ao HELL160</span></>
                 )}
               </div>
             </div>
@@ -448,7 +464,7 @@ function Paid({ reg, race, onPrint }: { reg: Registration; race: Race; onPrint: 
           {ics ? 'Adicionar ao calendário' : 'Calendário · data a anunciar'}
         </button>
       </div>
-      <p className="muted acc-small" style={{ margin: 0 }}>
+      <p className="muted acc-small" style={{ marginBottom: 0 }}>
         {race.id === 'bike'
           ? 'Levantamento do dorsal no dia da prova. A data é anunciada com o traçado.'
           : `Levantamento do dorsal na quinta-feira, 1 de julho, no ${EVENT.base}. Horário a confirmar.`}
@@ -495,7 +511,7 @@ function MedicalCert({ reg, race }: { reg: Registration; race: Race }) {
   const tone = cert?.status === 'validado' ? 'ok' : cert ? undefined : 'warn'
 
   return (
-    <div>
+    <div className="acc-step">
       <StepHead title="Atestado médico" status={status} tone={tone} />
       {cert ? (
         <dl className="kv acc-kv acc-kv-tight">
@@ -533,7 +549,7 @@ function GearChecklist({ reg }: { reg: Registration }) {
   }
 
   return (
-    <div>
+    <div className="acc-step">
       <StepHead title="Material obrigatório" status={`${done} de ${total}`} tone={done === total ? 'ok' : undefined} />
       <div className="acc-bar" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label="Material verificado">
         <span style={{ width: `${(done / total) * 100}%` }} />
@@ -590,7 +606,7 @@ function GpsTest() {
     g.s !== 'ok' ? null : g.acc <= 20 ? 'Bom: posição de GPS.' : g.acc <= 100 ? 'Aceitável. Ao ar livre deve melhorar.' : 'Fraco: provavelmente posição pela rede, não por GPS. Repete ao ar livre com o GPS ligado.'
 
   return (
-    <div>
+    <div className="acc-step">
       <StepHead
         title="Teste de sinal GPS"
         status={g.s === 'ok' ? `± ${Math.round(g.acc)} m` : g.s === 'busy' ? 'a procurar' : g.s === 'error' ? 'falhou' : 'por fazer'}
@@ -611,7 +627,7 @@ function GpsTest() {
               <dt>Precisão</dt><dd className="mono">± {Math.round(g.acc)} m</dd>
               <dt>Hora</dt><dd className="mono">{new Date(g.at).toLocaleTimeString('pt-PT')}</dd>
             </dl>
-            <p className="acc-small" style={{ margin: '8px 0 0' }}>{quality}</p>
+            <p className="acc-small">{quality}</p>
             <p className="muted acc-fine">A posição fica só neste ecrã; não é enviada nem guardada.</p>
           </>
         )}
@@ -624,7 +640,7 @@ function GpsTest() {
 function Device({ reg }: { reg: Registration }) {
   const [label, text] = DEVICE[reg.device] ?? DEVICE.phone
   return (
-    <div>
+    <div className="acc-step">
       <StepHead title="Tracking" status={label} />
       <p className="muted acc-small">{text}</p>
       <p className="muted acc-fine">
@@ -638,7 +654,7 @@ function Device({ reg }: { reg: Registration }) {
 function Gpx({ race }: { race: Race }) {
   const when = race.id === 'bike' ? 'com a data da prova' : 'em junho de 2027'
   return (
-    <div>
+    <div className="acc-step">
       <StepHead title="Track da prova" status="em preparação" />
       <button className="btn small ghost noarrow" disabled>GPX oficial · disponível {when}</button>
       <p className="muted acc-small">
@@ -758,7 +774,7 @@ function Receipt({ reg }: { reg: Registration }) {
         <dt>Prova</dt><dd>{race.name} · {race.distanceKm} km · {race.gainM} m D+</dd>
         <dt>Partida</dt><dd>{race.start}</dd>
         <dt>Atleta</dt><dd>{reg.first} {reg.last}</dd>
-        <dt>Email</dt><dd>{reg.email}</dd>
+        <dt>Email</dt><dd>{reg.email.trim().toLowerCase()}</dd>
         <dt>Referência</dt><dd>{reg.id}</dd>
         <dt>Valor</dt><dd>{eur(reg.priceEur)}</dd>
         <dt>Método</dt><dd>{pay ? methodText(pay.method, pay.last4) : '—'}</dd>

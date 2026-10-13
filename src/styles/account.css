@@ -20,6 +20,7 @@
 .acc-email { font: 500 14px var(--mono); overflow-wrap: anywhere; }
 .acc-stats { grid-template-columns: repeat(3, 1fr); }
 .acc-stats > div:nth-child(3n) { border-right: 0; }
+.acc-stats span { display: block; line-height: 1.35; margin-top: 6px; }
 
 .acc-sechead { align-items: baseline; margin-bottom: 28px; }
 .acc-h2 { font-size: clamp(32px, 4vw, 52px); }
@@ -38,34 +39,35 @@
 .acc-reg-body { display: grid; grid-template-columns: 5fr 7fr; gap: clamp(32px, 5vw, 80px); padding: 32px 0; align-items: start; }
 .acc-reg-body > * { min-width: 0; }
 .acc-col > * + * { margin-top: 24px; }
-.acc-kv { max-width: 460px; }
+.acc-kv { max-width: none; }
 .acc-kv dd { overflow-wrap: anywhere; }
-.acc-kv-tight { margin-top: 14px; gap: 6px 16px; font-size: 15px; }
+.acc-kv-tight { gap: 6px 16px; font-size: 15px; }
 .acc-file-name { font-family: var(--mono); font-size: 13px; }
 
 .acc-bibbox { border-top: 2px solid var(--ember); padding-top: 12px; }
 .acc-bib { font-size: clamp(96px, 10.5vw, 160px); line-height: 0.82; margin-top: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* passos de preparação (mesma linguagem da .numlist, com contador próprio para não numerar listas internas) */
-.acc-prep { list-style: none; padding: 0; margin: 0; counter-reset: prep; border-bottom: 1px solid var(--line); }
+.acc-prep { list-style: none; padding: 0; margin: 0; counter-reset: prep; }
 .acc-prep > li { counter-increment: prep; display: grid; grid-template-columns: 56px 1fr; padding: 22px 0 24px; border-top: 1px solid var(--line); }
 .acc-prep > li::before { content: counter(prep, decimal-leading-zero); font: 500 13px var(--mono); color: var(--ember); padding-top: 4px; }
 .acc-prep > li > * { min-width: 0; }
-.acc-step-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.acc-step > *, .acc-step > [aria-live] > * { margin: 0; }
+.acc-step > * + *, .acc-step > [aria-live] > * + * { margin-top: 12px; }
+.acc-step > [aria-live]:empty { display: none; }
+.acc-step-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .acc-step-head h4 { margin: 0; font: 700 19px/1.2 var(--sans); }
 .acc-state { color: var(--muted); white-space: nowrap; }
 .acc-state.ok { color: var(--ok); }
 .acc-state.warn { color: var(--ember); }
-.acc-prep .btn { margin-top: 6px; }
-.acc-prep p.acc-small { margin: 0 0 12px; }
 
 .acc-file { position: relative; }
 .acc-file input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
 .acc-file:focus-within { outline: 2px solid var(--ember); outline-offset: 3px; }
 
-.acc-bar { height: 4px; background: var(--line); margin: 6px 0 4px; }
+.acc-bar { height: 4px; background: var(--line); }
 .acc-bar span { display: block; height: 100%; background: var(--ember); transition: width 0.2s; }
-.acc-gear { list-style: none; padding: 0; margin: 10px 0 0; }
+.acc-gear { list-style: none; padding: 0; }
 .acc-gear li { border-bottom: 1px solid var(--line); }
 .acc-gear label { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start; padding: 10px 0; cursor: pointer; font-size: 15px; }
 .acc-gear input { accent-color: var(--ember); width: 18px; height: 18px; margin: 2px 0 0; }
@@ -84,6 +86,7 @@
 .acc-book { display: grid; grid-template-columns: 168px 1fr auto; gap: 28px; padding: 24px 0; border-bottom: 1px solid var(--line); align-items: start; }
 .acc-book > * { min-width: 0; }
 .acc-book-plate { aspect-ratio: 4 / 3; overflow: hidden; background: var(--chalk-2); }
+.acc-book-plate svg { display: block; width: 100%; height: 100%; }
 .acc-book.is-off .acc-book-plate { opacity: 0.45; filter: grayscale(1); }
 .acc-book-title { font: 700 22px/1.15 var(--sans); }
 .acc-book-title a { text-decoration: none; }
@@ -111,8 +114,9 @@
   .acc-reg-head { flex-direction: column-reverse; gap: 12px; }
   .acc-prep > li { grid-template-columns: 40px 1fr; }
   .acc-reg-foot { flex-direction: column; align-items: flex-start; }
-  .acc-book { grid-template-columns: 1fr; }
-  .acc-book-plate { aspect-ratio: 16 / 7; }
+  .acc-meta { flex-direction: column; gap: 2px; }
+  .acc-meta span + span::before { content: none; }
+  .acc-book { grid-template-columns: 76px 1fr; gap: 14px 16px; }
 }
 
 /* ---------- comprovativo impresso ---------- */
