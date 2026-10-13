@@ -89,7 +89,6 @@ export function ScrollStory() {
         <div className="wrap story-grid">
           <div className="story-read">
             <p className="mono story-kicker">
-              <span className="story-chapter">{String(beat + 1).padStart(2, '0')} / {String(BEATS.length).padStart(2, '0')}</span>
               {BEATS[beat].kicker}
             </p>
             <div className="story-clock" aria-live="off">

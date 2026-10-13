@@ -1,16 +1,5 @@
-/* Scroll: história da prova, pôr do sol do hero, faixa das aldeias, reveals.
+/* Scroll: um momento autoral (a prova em 36 horas) e dois apoios discretos (pôr do sol, aldeias).
    Só transform/opacity; com prefers-reduced-motion tudo fica estático (ver fim do ficheiro). */
-
-/* ---------- reveals (aplicados por useReveal, só abaixo da dobra) ---------- */
-.rv {
-  opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 500ms ease-out, transform 600ms cubic-bezier(0.2, 0.7, 0.2, 1);
-  transition-delay: var(--rv-delay, 0ms);
-}
-.rv.rv-in { opacity: 1; transform: none; }
-.race-row.rv { transform: translateX(-24px); }
-.race-row.rv.rv-in { transform: none; }
 
 /* ---------- hero: o sol põe-se quando se sai do hero ---------- */
 .hero .sun {
@@ -156,7 +145,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rv { opacity: 1 !important; transform: none !important; transition: none !important; }
   .hero .sun, .hero h1, .hero .contours, .villages .track { transform: none !important; }
   .villages { overflow-x: auto; }
 }
