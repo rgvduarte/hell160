@@ -21,9 +21,10 @@
   --fg: var(--ink);
   --muted: var(--ink-3);
 
-  --display: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
-  --sans: 'Instrument Sans Variable', system-ui, sans-serif;
-  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  /* Uma família só: Schibsted Grotesk. Números tabulares onde há dados; sem mono "técnico". */
+  --display: 'Schibsted Grotesk Variable', 'Helvetica Neue', Arial, sans-serif;
+  --sans: 'Schibsted Grotesk Variable', 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'Schibsted Grotesk Variable', 'Helvetica Neue', Arial, sans-serif;
 
   --gutter: clamp(16px, 4vw, 56px);
   --max: 1360px;
@@ -371,3 +372,53 @@ section { position: relative; }
 .map-marker.start i { width: 16px; height: 16px; background: var(--ink); }
 .map-marker.life i { background: var(--ember); border-color: var(--ember); transform: translateX(-50%) rotate(45deg); }
 .map-marker span { background: rgba(255, 255, 255, 0.86); padding: 2px 6px; margin-left: -4px; }
+
+
+/* ==========================================================================
+   Tipografia: Schibsted Grotesk, escrita normal (sem maiúsculas em todo o lado),
+   rótulos sem tracking, números tabulares. Sobrepõe as regras antigas acima.
+   ========================================================================== */
+body { font-feature-settings: 'ss01' on; }
+.display {
+  font-family: var(--display); font-weight: 800; font-stretch: normal; font-variation-settings: normal;
+  text-transform: none; letter-spacing: -0.035em; line-height: 0.96;
+}
+h2.display { font-size: clamp(34px, 5vw, 72px); }
+.cond {
+  font-family: var(--display); font-weight: 750; font-variation-settings: normal;
+  text-transform: none; letter-spacing: -0.02em; line-height: 1.08;
+}
+.mono, .eyebrow, .kv dt {
+  font-family: var(--sans); font-size: 14px; font-weight: 500; letter-spacing: 0; text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+.eyebrow::before { display: none; }
+.nav ul a { font: 500 15px/1 var(--sans); letter-spacing: 0; text-transform: none; }
+.nav .menu { font: 600 14px var(--sans); text-transform: none; }
+.btn { font: 650 15px/1 var(--sans); letter-spacing: 0; text-transform: none; }
+.chip { font: 500 14px var(--sans); letter-spacing: 0; text-transform: none; }
+.tag { font: 600 12px var(--sans); letter-spacing: 0; text-transform: none; }
+.field label, .field .label { font: 600 14px var(--sans); letter-spacing: 0; text-transform: none; color: var(--ink-2); }
+.night .field label, .night .field .label { color: var(--muted); }
+.board { font: 15px var(--sans); font-variant-numeric: tabular-nums; }
+.board th { font: 600 13px var(--sans); letter-spacing: 0; text-transform: none; }
+.steps li { font: 600 14px var(--sans); letter-spacing: 0; text-transform: none; }
+.stats b { font-family: var(--display); font-weight: 800; font-variation-settings: normal; font-variant-numeric: tabular-nums; }
+.stats span { font: 500 14px var(--sans); letter-spacing: 0; text-transform: none; }
+.race-row .num { font-weight: 800; font-variation-settings: normal; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.race-row .name { font-weight: 750; font-variation-settings: normal; text-transform: none; letter-spacing: -0.02em; }
+.race-row .name small, .race-row .v small, .race-row .go { font-family: var(--sans); font-size: 13px; letter-spacing: 0; text-transform: none; }
+.race-row .v { font-family: var(--sans); font-variant-numeric: tabular-nums; }
+.total b { font-weight: 800; font-variation-settings: normal; font-variant-numeric: tabular-nums; }
+.countdown { font-family: var(--sans); font-variant-numeric: tabular-nums; }
+.countdown b { font-weight: 600; letter-spacing: -0.02em; }
+.countdown i { font-size: 13px; letter-spacing: 0; text-transform: none; }
+.footer .base { font: 500 13px var(--sans); letter-spacing: 0; text-transform: none; }
+.profile .tick { font: 12px var(--sans); }
+.routemap .river-label { font: 600 13px var(--sans); letter-spacing: 0.2em; }
+.routemap .wpt text .km { font-family: var(--sans); }
+.trailmap-note { font: 600 13px var(--sans); letter-spacing: 0; text-transform: none; }
+
+/* HELL160 no hero com a letragem própria */
+.hero-lettering { display: block; width: min(100%, 980px); height: auto; margin: 36px 0 20px; }
+.hero-tagline { font: 700 clamp(20px, 2.4vw, 30px)/1.1 var(--display); letter-spacing: -0.02em; margin: 0 0 8px; }

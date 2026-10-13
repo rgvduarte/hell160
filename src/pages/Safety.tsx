@@ -333,6 +333,7 @@ export function DaePledgeForm() {
   }
 
   function reset() {
+    setKind('empresa')
     setName('')
     setEmail('')
     setAmount(UNIT_EUR)
@@ -439,7 +440,7 @@ export function DaePledgeForm() {
           <option value={ANYWHERE}>{ANYWHERE}</option>
           {PROPOSED.map((a) => (
             <option key={a.place} value={a.place}>
-              {a.place} · km {a.km.toFixed(1).replace('.', ',')}
+              {a.place}{a.km > 0 ? ` · km ${a.km.toFixed(1).replace('.', ',')}` : ''}
               {remaining(a.place) === 0 ? ' · coberto' : ` · faltam ${eur(remaining(a.place))}`}
             </option>
           ))}

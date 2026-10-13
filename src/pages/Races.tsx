@@ -136,13 +136,15 @@ export function RaceDetail() {
           <p className="eyebrow">
             <Link to="/provas" style={{ textDecoration: 'none' }}>Provas</Link> / {race.kind}
           </p>
-          <div className="split" style={{ alignItems: 'end' }}>
-            <h1 className="display" style={{ fontSize: 'clamp(56px, 10vw, 150px)' }}>{race.name}</h1>
+          <h1 className="display cm-race-title" style={{ ['--len' as string]: Math.max(...race.name.split(/\s+/).map((w) => w.length)) }}>
+            {race.name}
+          </h1>
+          <div className="split mt" style={{ alignItems: 'start' }}>
+            <p className="lede" style={{ margin: 0 }}>{race.blurb}</p>
             <div className="stack" style={{ ['--s' as string]: '16px' }}>
-              <p className="lede">{race.blurb}</p>
-              <p className="muted">{race.startNote}</p>
+              <p className="muted" style={{ margin: 0 }}>{race.startNote}</p>
               {sp.sold && (
-                <p className="mono cm-soldout" style={{ margin: 0 }}>
+                <p className="mono cm-soldout" style={{ marginBottom: 0 }}>
                   Esgotado · {race.places} vagas preenchidas
                 </p>
               )}

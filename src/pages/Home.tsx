@@ -7,6 +7,7 @@ import { ScrollStory } from '../components/ScrollStory'
 import { WAYPOINTS } from '../data/route'
 import { usePrefersReducedMotion, useScrollVars } from '../lib/scroll'
 import { HousePlate } from '../components/HousePlate'
+import { HeroLettering } from '../components/Logo'
 import { RaceTable } from './Races'
 
 export function Home() {
@@ -30,17 +31,15 @@ export function Home() {
             <span className="ember">Inscrições abertas</span>
           </div>
           <div style={{ position: 'relative' }}>
-            <div className="sun" aria-hidden />
-            <h1 className="display">
-              Hell
-              <span className="row2">160</span>
-              <small>Shadows and Dust</small>
+            <h1 style={{ margin: 0 }}>
+              <HeroLettering />
+              <span className="hero-tagline">Shadows and Dust</span>
             </h1>
           </div>
           <div className="foot">
             <div>
               <p className="lede" style={{ marginBottom: 28 }}>
-                164 km em autonomia total pela margem esquerda do Guadiana. Parte-se às dez da noite. Volta-se quando se volta.
+                164 km em autonomia total pela margem esquerda do Guadiana, com partida às dez da noite e 36 horas de limite.
               </p>
               <div className="row">
                 <Link className="btn" to="/inscricao">

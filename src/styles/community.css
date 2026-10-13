@@ -3,17 +3,17 @@
 
 .cm-anchor { scroll-margin-top: 88px; }
 .cm-h2 { font-size: clamp(32px, 4vw, 52px); }
-.cm-fine { font-size: 14px; margin: 0; }
+.cm-fine { font-size: 14px; margin-bottom: 0; }
 .summary.cm-static { position: static; }
 .cm-done:focus { outline: none; }
 .cm-done .kv dd { overflow-wrap: anywhere; }
-.cm-ref { font: 500 clamp(20px, 2.4vw, 28px)/1.1 var(--mono); letter-spacing: 0.02em; margin: 6px 0 0; overflow-wrap: anywhere; }
+.cm-ref { font: 600 clamp(20px, 2.4vw, 28px)/1.1 var(--sans); font-variant-numeric: tabular-nums; letter-spacing: 0; margin: 6px 0 0; overflow-wrap: anywhere; }
 .field textarea.cm-textarea { resize: vertical; min-height: 84px; font: 400 17px/1.4 var(--sans); }
 
 /* ---------- segurança: progresso dos compromissos ---------- */
 .cm-progress { margin: 0; }
 .cm-progress .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.cm-progress .head b { font: 900 clamp(28px, 3.2vw, 44px)/1 var(--display); font-variation-settings: 'wdth' 100; letter-spacing: -0.02em; }
+.cm-progress .head b { font: 800 clamp(28px, 3.2vw, 44px)/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 .cm-cells { display: grid; grid-template-columns: repeat(var(--n, 8), 1fr); gap: 4px; margin-top: 14px; }
 .cm-cells span { position: relative; height: 18px; border: 1px solid var(--fg); overflow: hidden; }
 .cm-cells span i { position: absolute; inset: 0 auto 0 0; background: var(--ember); }
@@ -21,18 +21,18 @@
 
 /* lista de locais com valor prometido */
 .cm-places li { display: flex; justify-content: space-between; align-items: center; gap: 8px 16px; flex-wrap: wrap; }
-.cm-places .amt { font: 500 12px var(--mono); letter-spacing: 0.04em; color: var(--muted); }
+.cm-places .amt { font: 500 14px var(--sans); font-variant-numeric: tabular-nums; color: var(--muted); }
 .cm-places .right { display: flex; gap: 12px; align-items: center; margin-left: auto; }
 
 /* quem já apoiou */
 .cm-backers { list-style: none; padding: 0; margin: 0; border-top: 2px solid var(--fg); }
 .cm-backers li { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
 .cm-backers .who { font-weight: 600; overflow-wrap: anywhere; }
-.cm-backers .val { font: 500 14px var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
-.cm-backers .where { grid-column: 1 / -1; font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.cm-backers .val { font: 600 15px var(--sans); text-align: right; font-variant-numeric: tabular-nums; }
+.cm-backers .where { grid-column: 1 / -1; font: 500 14px var(--sans); color: var(--muted); }
 
 /* valor: chips com uma linha de nota */
-.cm-amounts .chip small { display: block; margin-top: 3px; font-size: 10px; opacity: 0.75; text-transform: none; letter-spacing: 0.02em; }
+.cm-amounts .chip small { display: block; margin-top: 3px; font-size: 12px; opacity: 0.75; }
 .cm-amounts .chip { text-align: left; }
 
 /* ---------- live ---------- */
@@ -43,7 +43,7 @@
 .cm-search input { flex: 1; min-width: 0; font: 400 16px var(--sans); color: var(--fg); background: transparent; border: 0; padding: 10px 0; border-radius: 0; }
 .cm-search input:focus { outline: none; }
 .cm-search input::-webkit-search-cancel-button { display: none; }
-.cm-search button { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; background: none; border: 0; color: var(--muted); cursor: pointer; padding: 8px 0 8px 8px; }
+.cm-search button { font: 500 14px var(--sans); background: none; border: 0; color: var(--muted); cursor: pointer; padding: 8px 0 8px 8px; }
 .cm-search button:hover { color: var(--ember); }
 .cm-board { max-height: calc(100svh - 64px - 112px); overflow: auto; overscroll-behavior: contain; }
 .cm-board .board th { z-index: 2; }
@@ -70,7 +70,7 @@
 
 .cm-runner-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; }
 .cm-runner-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.cm-copy-field { width: 100%; font: 13px var(--mono); color: var(--fg); background: transparent; border: 1px solid var(--line); padding: 8px; }
+.cm-copy-field { width: 100%; font: 14px var(--sans); color: var(--fg); background: transparent; border: 1px solid var(--line); padding: 8px; }
 .cm-live-note { font-size: 14px; }
 .cm-live .alert { flex-wrap: wrap; }
 
@@ -105,5 +105,7 @@
 }
 .cm-soldout { color: var(--ember); }
 .stats b.cm-word { font-size: clamp(20px, 2.2vw, 32px); line-height: clamp(30px, 3.6vw, 54px); }
+/* título da prova: ocupa a largura toda e encolhe para a palavra mais longa caber (sem partir palavras) */
+.cm-race-title { font-size: min(150px, calc((100vw - 2 * var(--gutter)) / (var(--len, 8) * 0.95))); }
 .cm-cal { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .cm-live .runner.cm-dim { opacity: 0.25; }

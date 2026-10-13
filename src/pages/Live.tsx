@@ -183,8 +183,8 @@ export function Live() {
 
   // O dorsal selecionado vive no URL (?dorsal=123), para o link poder ser partilhado. Trocar de atleta substitui a entrada do histórico.
   const [params, setParams] = useSearchParams()
-  const param = params.get('dorsal')
-  const paramBib = param != null && /^\s*#?\d+\s*$/.test(param) ? Number(param.replace(/\D/g, '')) : NaN
+  const param = params.get('dorsal')?.trim() || null
+  const paramBib = param != null && /^#?\d+$/.test(param) ? Number(param.replace(/\D/g, '')) : NaN
   const badParam = param != null && !BIBS.has(paramBib)
   const sel: number | null = param == null ? DEFAULT_BIB : badParam ? null : paramBib
 

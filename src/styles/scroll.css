@@ -148,3 +148,14 @@
   .hero .sun, .hero h1, .hero .contours, .villages .track { transform: none !important; }
   .villages { overflow-x: auto; }
 }
+
+/* tipografia Schibsted */
+.villages span { font: 800 clamp(26px, 3.4vw, 46px) / 1 var(--display); font-variation-settings: normal; text-transform: none; letter-spacing: -0.03em; }
+.villages span i { font: 500 13px var(--sans); letter-spacing: 0; }
+.story-kicker { font: 600 15px var(--sans); text-transform: none; letter-spacing: 0; }
+.story-clock .mono { font: 500 15px var(--sans); text-transform: none; letter-spacing: 0; }
+.story-clock b { font: 700 clamp(76px, 13vw, 200px) / 0.85 var(--display); letter-spacing: -0.05em; font-variant-numeric: tabular-nums; }
+.story-data dt { font: 500 13px var(--sans); text-transform: none; letter-spacing: 0; }
+.story-data dd { font-family: var(--sans); font-weight: 600; }
+.story-note { font: 500 13px var(--sans); text-transform: none; letter-spacing: 0; }
+@media (max-width: 760px) { .story-clock b { font-size: 22vw; } }

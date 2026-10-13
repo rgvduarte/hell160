@@ -1,4 +1,4 @@
-import { DORSAL, DORSAL_SMALL, LOCKUP } from './logoPaths'
+import { DORSAL, DORSAL_SMALL, LOCKUP, layout } from './logoPaths'
 
 // Cores fixas de marca (o dorsal é um objeto: não muda com o tema). O HELL do lockup segue currentColor.
 const INK = 'var(--brand-ink, #15120f)'
@@ -48,4 +48,22 @@ export function Lockup({ height = 30, title = 'HELL160' }: { height?: number; ti
 // Compatibilidade: o antigo wordmark passa a ser o lockup horizontal.
 export function Wordmark({ height = 24 }: { height?: number }) {
   return <Lockup height={height} />
+}
+
+// HELL por cima de 160, com a letragem própria (usado no hero do início).
+const HELL = layout('HELL')
+const N160 = layout('160')
+
+export function HeroLettering({ className = 'hero-lettering' }: { className?: string }) {
+  const w = HELL.width
+  return (
+    <svg className={className} viewBox={`0 0 ${w} 128`} role="img" aria-label="HELL160">
+      {HELL.glyphs.map((g, i) => (
+        <path key={`h${i}`} d={g.d} transform={`translate(${g.x} 0)`} fill="currentColor" fillRule="evenodd" />
+      ))}
+      {N160.glyphs.map((g, i) => (
+        <path key={`n${i}`} d={g.d} transform={`translate(${g.x} 68)`} fill={EMBER} fillRule="evenodd" />
+      ))}
+    </svg>
+  )
 }
