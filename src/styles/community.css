@@ -105,7 +105,8 @@
 }
 .cm-soldout { color: var(--ember); }
 .stats b.cm-word { font-size: clamp(20px, 2.2vw, 32px); line-height: clamp(30px, 3.6vw, 54px); }
-/* título da prova: ocupa a largura toda e encolhe para a palavra mais longa caber (sem partir palavras) */
-.cm-race-title { font-size: min(150px, calc((100vw - 2 * var(--gutter)) / (var(--len, 8) * 0.95))); }
+/* título da prova: ocupa a largura toda e encolhe para a palavra mais longa caber (sem partir palavras).
+   0.75 = largura média de uma maiúscula em Schibsted Grotesk 800 (≈ 0.6 em) com folga. */
+.cm-race-title { font-size: min(150px, calc((100vw - 2 * var(--gutter)) / (var(--len, 8) * 0.75))); }
 .cm-cal { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .cm-live .runner.cm-dim { opacity: 0.25; }
