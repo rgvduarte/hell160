@@ -27,12 +27,12 @@ const MODES = {
   caminhar: {
     label: 'Caminhar',
     kmh: 5,
-    text: `O limite de ${MAIN.limitH} horas dá uma média mínima de ${nf1(MIN_AVG)} km/h nos ${km(MAIN.distanceKm)} km, contando as paragens. É ritmo de caminhada, desde que as paragens sejam curtas.`,
+    text: `Para chegar dentro do limite de ${MAIN.limitH} horas é preciso manter ${nf1(MIN_AVG)} km/h de média nos ${km(MAIN.distanceKm)} km, com as paragens incluídas. A ${nf1(5)} km/h a margem é curta: cada paragem conta.`,
   },
   correr: {
     label: 'Correr',
     kmh: 7,
-    text: `A correr ganhas margem para as bases de vida e para as horas de mais calor. A média mínima para chegar dentro do limite continua a ser ${nf1(MIN_AVG)} km/h.`,
+    text: `A ${nf1(7)} km/h de média sobra tempo para as bases de vida e para as horas de mais calor. A média mínima continua a ser ${nf1(MIN_AVG)} km/h.`,
   },
 } as const
 
@@ -44,11 +44,9 @@ export function Practical() {
           <h2 className="display" id="pratica-t">
             Informação prática
           </h2>
-          <div className="sec-head-text">
-            <p className="lede">
-              Cada um faz a prova ao seu ritmo, dentro do limite. Os números do HELL160 vêm do regulamento de 2026; os do HELL100 ainda são provisórios.
-            </p>
-          </div>
+          <p className="lede">
+            Cada um faz a prova ao seu ritmo, dentro do limite. Os números do HELL160 vêm do regulamento de 2026; os do HELL100 ainda são provisórios.
+          </p>
         </header>
         <div className="practical-grid">
           <RunOrWalk />
@@ -211,17 +209,14 @@ function Essentials() {
     {
       t: 'A partir dos 18 anos',
       d: 'Idade mínima para participar. Na inscrição pedimos certificado médico.',
-      a: 'Condições de inscrição',
     },
     {
       t: 'Autonomia total entre abastecimentos',
       d: `${MAIN.aid} abastecimentos no HELL160, ${MAIN.lifeBases} deles bases de vida. Entre um e outro levas a água e a comida de que precisas.`,
-      a: 'Ver os abastecimentos',
     },
     {
       t: 'Material obrigatório verificado à partida',
       d: `São ${MANDATORY_GEAR.length} itens, entre eles frontal, manta térmica, apito, telemóvel com a app HELL160 e GPS com o track. Há também controlos em prova.`,
-      a: 'Ver a lista de material',
     },
   ]
   return (
@@ -231,10 +226,12 @@ function Essentials() {
           <li key={i.t}>
             <h3>{i.t}</h3>
             <p>{i.d}</p>
-            <Link to="/provas/hell160">{i.a}</Link>
           </li>
         ))}
       </ul>
+      <Link className="btn ghost pr-more" to="/provas/hell160">
+        Ver o HELL160 em detalhe
+      </Link>
     </article>
   )
 }

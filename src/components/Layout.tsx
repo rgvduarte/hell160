@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { EVENT } from '../data/event'
-import { announcement } from '../data/site'
+import { EVENT, raceById } from '../data/event'
+import { announcement, navAction } from '../data/site'
 import { Lockup } from './Logo'
 import { IconClose, IconInstagram, IconLongArrowUp, IconMail, IconMenu } from './Icons'
 
@@ -26,19 +26,63 @@ const FOOT_LINKS = [
   ['/marca', 'Marca'],
 ] as const
 
+// Título de cada página (WCAG 2.4.2). Rotas desconhecidas: página não encontrada.
+const TITLES: Record<string, string> = {
+  '/provas': 'Provas',
+  '/inscricao': 'Inscrição',
+  '/alojamento': 'Dormir na aldeia',
+  '/alojamento/anfitriao': 'Receber atletas em casa',
+  '/live': 'Live',
+  '/causa': 'A causa',
+  '/territorio': 'Território',
+  '/apoiar': 'Apoiar',
+  '/marca': 'Marca',
+  '/conta': 'Área do atleta',
+  '/organizacao': 'Organização',
+}
+
+function titleFor(pathname: string) {
+  const p = pathname.replace(/\/+$/, '') || '/'
+  if (p === '/') return 'HELL160 · Shadows and Dust · 2027'
+  const race = p.match(/^\/provas\/([^/]+)$/)
+  const r = race ? raceById(race[1]) : null
+  if (r) return `${r.name} · Provas 2027`
+  const t = race
+    ? 'Página não encontrada'
+    : TITLES[p] ?? (/^\/alojamento\/[^/]+$/.test(p) ? 'Casa na aldeia' : /^\/anfitriao\/[^/]+$/.test(p) ? 'Área do anfitrião' : 'Página não encontrada')
+  return `${t} · HELL160`
+}
+
 export function Layout() {
   const { pathname, hash } = useLocation()
   const [menu, setMenu] = useState(false)
   const menuBtn = useRef<HTMLButtonElement>(null)
   const over = useOverHero(pathname === '/')
+  const first = useRef(true)
+  const cta = navAction()
+
+  useEffect(() => {
+    document.title = titleFor(pathname)
+  }, [pathname])
 
   // Mudança de página: fecha o menu e vai para o topo, ou para a âncora (#novidades, #provas…).
+  // O foco segue: para a âncora, ou para o conteúdo novo (não fica preso no link do rodapé).
   useEffect(() => {
     setMenu(false)
+    const initial = first.current
+    first.current = false
     const id = hash ? decodeURIComponent(hash.slice(1)) : ''
     const target = id ? document.getElementById(id) : null
-    if (target) target.scrollIntoView({ block: 'start' })
-    else window.scrollTo({ top: 0, behavior: 'instant' })
+    if (target) {
+      target.scrollIntoView({ block: 'start' })
+      if (!initial) {
+        if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1')
+        target.focus({ preventScroll: true })
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: 'instant' })
+      if (!initial) document.getElementById('conteudo')?.focus({ preventScroll: true })
+    }
   }, [pathname, hash])
 
   return (
@@ -61,8 +105,8 @@ export function Layout() {
               ))}
             </ul>
           </nav>
-          <Link to="/inscricao" className="btn ember small nav-cta">
-            Inscrever
+          <Link to={cta.to} className={`btn small nav-cta ${cta.primary ? 'ember' : 'ghost nav-cta--soft'}`}>
+            {cta.short}
           </Link>
           <button
             ref={menuBtn}
@@ -166,6 +210,8 @@ function Announcement() {
               /* sem armazenamento: fecha só nesta visita */
             }
             setClosed(true)
+            // o botão desaparece: o foco passa para o logótipo, o primeiro elemento a seguir
+            requestAnimationFrame(() => document.querySelector<HTMLElement>('.nav-brand')?.focus())
           }}
         >
           <IconClose size={20} />
@@ -255,8 +301,8 @@ function MenuSheet({ open, onClose, returnTo, pathname }: { open: boolean; onClo
           </ul>
         </nav>
         <div className="sheet-foot">
-          <Link className="btn ember" to="/inscricao">
-            Inscrever numa prova
+          <Link className="btn ember" to={navAction().to} onClick={() => ref.current?.close()}>
+            {navAction().long}
           </Link>
           <div className="sheet-contacts">
             <a href={EVENT.instagram} target="_blank" rel="noreferrer">
@@ -291,8 +337,8 @@ function Footer() {
           <div className="foot-brand">
             <Lockup height={56} />
             <p>Uma prova organizada para levar desfibrilhadores e formação às aldeias da margem esquerda do Guadiana, longe dos hospitais.</p>
-            <Link className="btn ember" to="/inscricao">
-              Inscrever numa prova
+            <Link className="btn ember" to={navAction().to}>
+              {navAction().long}
             </Link>
           </div>
           <nav className="foot-links" aria-label="Rodapé">

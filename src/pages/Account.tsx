@@ -5,6 +5,7 @@ import { EVENT, MANDATORY_GEAR, RACES, raceById, type Race } from '../data/event
 import { EVENT_NIGHTS } from '../data/listings'
 import { HousePlate } from '../components/HousePlate'
 import { PaymentPanel } from '../components/PaymentPanel'
+import { SITE, registrationLabel } from '../data/site'
 import { download, eur, findListing, raceICS, takenNights } from '../lib/domain'
 import {
   getAll,
@@ -241,8 +242,7 @@ export function Account() {
   return (
     <section className="sec tight acc-page no-reveal">
       <div className="wrap">
-        <p className="eyebrow">Área do atleta</p>
-        <h1 className="display acc-hello">Entrar</h1>
+        <h1 className="display acc-hello">Área do atleta</h1>
       </div>
       <div className="wrap split acc-login">
         <div>
@@ -367,7 +367,6 @@ function Dashboard({ email, data, linkError, switchTo, onDismiss, onSwitch, onLo
             )}
             <div className="acc-head">
               <div>
-                <p className="eyebrow">Área do atleta</p>
                 <h1 id="acc-title" tabIndex={-1} className="display acc-hello">{first ? `Olá, ${first}.` : 'Olá.'}</h1>
               </div>
               <div className="acc-who">
@@ -475,7 +474,13 @@ function RegistrationBlock({ reg, onPrint }: { reg: Registration; onPrint: () =>
                   <b>{eur(reg.priceEur)}</b>
                 </div>
               </div>
-              <PaymentPanel reg={reg} />
+              {SITE.registration.status !== 'abertas' ? (
+                <p className="muted" style={{ margin: 0 }}>
+                  Pré-inscrição guardada. {registrationLabel()}: nessa altura recebes um email para confirmar a vaga e pagar.
+                </p>
+              ) : (
+                <PaymentPanel reg={reg} />
+              )}
               <p className="muted acc-small">O dorsal é atribuído quando o pagamento entra. Até lá o lugar fica reservado.</p>
             </div>
           )}

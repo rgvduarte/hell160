@@ -2,16 +2,18 @@ import { Link } from 'react-router-dom'
 import { TrailMap } from '../components/TrailMap'
 import { Media } from '../components/Media'
 import { mapRoute } from '../data/routes'
+import { ROUTE_PUBLISHED } from '../data/site'
 
 const PLACES = [
-  ['A-do-Pinto', 'Partida e meta. A aldeia que organiza e que abre as portas.'],
-  ['Serpa', 'Muralhas, queijo e cante alentejano. A vila do concelho.'],
+  ['A-do-Pinto', 'Partida e meta, no Pavilhão Polivalente.'],
+  ['Serpa', 'A cidade, sede do concelho. Muralhas, queijo e cante alentejano.'],
   ['Pulo do Lobo', 'O Guadiana aperta-se entre rochas e cai numa garganta funda.'],
   ['Montado', 'Azinheiras e sobreiros a perder de vista, estradões de terra e pouca sombra.'],
-  ['As aldeias', 'Casas caiadas com barras azuis e amarelas, gente à porta a ver passar quem corre.'],
+  ['As aldeias', 'Casas caiadas e ruas estreitas. É nas aldeias que ficam os desfibrilhadores e as casas para dormir.'],
 ] as const
 
 export function Territory() {
+  const route = ROUTE_PUBLISHED.hell160
   return (
     <>
       <section className="page-hero" aria-labelledby="terr-h">
@@ -21,8 +23,8 @@ export function Territory() {
             Margem esquerda
           </h1>
           <p className="lede">
-            O lado do Guadiana que fica para lá do rio, para quem vem de Lisboa. Montado, planície, aldeias brancas e um calor que não pede
-            desculpa.
+            A margem esquerda do Guadiana, a partir de <span className="nw">A-do-Pinto</span>, no concelho de Serpa. Montado, planície, aldeias
+            brancas e calor forte em julho.
           </p>
         </div>
       </section>
@@ -38,12 +40,24 @@ export function Territory() {
               </li>
             ))}
           </ol>
-          <div>
-            <div className="map-frame">
-              <TrailMap routes={[mapRoute('hell160')!]} height={560} label="Mapa do território e do percurso do HELL160" />
+          {route ? (
+            <div>
+              <div className="map-frame">
+                <TrailMap routes={[mapRoute('hell160')!]} height={560} label="Mapa do território e do percurso do HELL160" />
+              </div>
+              <p className="muted mt-s">GR15 e GR15.2 · margem esquerda do Guadiana</p>
             </div>
-            <p className="muted mt-s">GR15 e GR15.2 · margem esquerda do Guadiana</p>
-          </div>
+          ) : (
+            <aside className="panel terr-route" aria-labelledby="terr-route-t">
+              <h2 className="cond" id="terr-route-t">
+                O percurso
+              </h2>
+              <p>Circular a partir de A-do-Pinto, pela GR15 e pela GR15.2. O traçado oficial do HELL160 ainda não foi publicado.</p>
+              <Link className="btn ghost" to="/provas/hell160">
+                Ver o HELL160
+              </Link>
+            </aside>
+          )}
         </div>
       </section>
       <section className="sec band-panel">
@@ -51,8 +65,7 @@ export function Territory() {
           <h2 className="display">Ver passar</h2>
           <div className="stack">
             <p className="lede">
-              As aldeias do percurso são os melhores sítios para apoiar. Com o live sabes a que horas o teu atleta passa em cada uma, e chegas
-              antes dele.
+              As aldeias do percurso são os melhores sítios para apoiar. Com o live sabes a que horas cada atleta passa em cada uma.
             </p>
             <div className="pill-row">
               <Link className="btn" to="/live">

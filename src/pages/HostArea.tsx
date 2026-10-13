@@ -23,7 +23,6 @@ export function HostArea() {
     return (
       <section className="sec">
         <div className="wrap">
-          <p className="eyebrow">Área do anfitrião</p>
           <h1 className="display flow-title long">Referência não encontrada</h1>
           <p className="lede mt">
             Não há nenhuma casa com a referência <span className="mono">{ref.toUpperCase()}</span> neste browser.
@@ -109,8 +108,8 @@ function HostDashboard({ app }: { app: HostApplication }) {
       <section className="sec tight">
         <div className="wrap ha-head">
           <div>
-            <p className="eyebrow">Área do anfitrião · {app.id}</p>
             <h1 className="display flow-title long">{listing.title}</h1>
+            <p className="muted" style={{ margin: '8px 0 0' }}>Área do anfitrião · referência <span className="mono">{app.id}</span></p>
             <p className="ha-meta mono muted">
               <span>{app.village}</span>
               <span>{app.sleeps} pessoas</span>

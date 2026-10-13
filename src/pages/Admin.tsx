@@ -212,7 +212,6 @@ function Gate({ onUnlock }: { onUnlock: () => void }) {
     <section className="sec tight adm">
       <div className="wrap split" style={{ alignItems: 'end' }}>
         <div>
-          <p className="eyebrow">Organização · edição 2027</p>
           <h1 className="display adm-title">Back-office</h1>
           <p className="lede mt">Inscrições, pagamentos, atestados, alojamento e contactos num só sítio.</p>
         </div>

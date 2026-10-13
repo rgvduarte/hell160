@@ -4,11 +4,14 @@ import { EVENT, RACES, currentPrice, raceById, type Race } from '../data/event'
 import { EVENT_NIGHTS } from '../data/listings'
 import { HousePicker, stayProblem, type StayPick } from '../components/HousePicker'
 import { PaymentPanel } from '../components/PaymentPanel'
+import { NEWSLETTER, SITE, registrationLabel } from '../data/site'
 import { activeRegs, allListings, download, eur, findListing, fmtDate, raceICS, spotsLeft } from '../lib/domain'
 import { add, getAll, sameEmail, setSessionEmail, uid, useCollection, useSessionEmail, type Registration } from '../lib/store'
 import '../styles/flows.css'
 
 const STEPS = ['Prova', 'Atleta', 'Segurança', 'Alojamento', 'Confirmar']
+// Enquanto as inscrições não abrem (src/data/site.ts), o fluxo guarda uma pré-inscrição, sem pagamento.
+const preview = () => SITE.registration.status !== 'abertas'
 const RENTAL_EUR = 15
 const CERT_MAX_MB = 10
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -238,8 +241,13 @@ function RegisterFlow() {
   return (
     <section className="sec tight">
       <div className="wrap">
-        <p className="eyebrow">Inscrição · edição 2027</p>
-        <h1 className="display flow-title" style={{ marginBottom: 48 }}>Inscrição</h1>
+        <h1 className="display flow-title" style={{ marginBottom: preview() ? 24 : 48 }}>Inscrição 2027</h1>
+        {preview() && (
+          <p className="notice flow-preview" role="status">
+            {registrationLabel()}. Podes preparar a inscrição já: fica guardada como pré-inscrição e, quando abrirem, avisamos por
+            email para confirmares a vaga e pagares. <Link to={NEWSLETTER}>Receber o aviso de abertura</Link>
+          </p>
+        )}
         <ol className="steps" ref={top}>
           {STEPS.map((s, i) => (
             <li key={s} className={i <= step ? 'on' : ''} aria-current={i === step ? 'step' : undefined}><span>{s}</span></li>
@@ -416,7 +424,9 @@ function RegisterFlow() {
                 </label>
                 {show('accept') && <p className="flow-err-line" id="accept-err" role="alert">{errors[4].accept}</p>}
                 <p className="muted flow-fine" style={{ fontSize: 14 }}>
-                  A seguir pagas por MB WAY, Multibanco ou cartão. Neste protótipo o pagamento é uma simulação: nada é cobrado.
+                  {preview()
+                    ? 'Fica como pré-inscrição: não pagas nada agora. Quando as inscrições abrirem, recebes um email para confirmar e pagar.'
+                    : 'A seguir pagas por MB WAY, Multibanco ou cartão.'}
                 </p>
               </>
             )}
@@ -424,14 +434,14 @@ function RegisterFlow() {
             <div className="row">
               {step > 0 && <button type="button" className="btn ghost noarrow" onClick={() => goTo(step - 1)}>← Voltar</button>}
               <button className="btn" disabled={step === 0 && !av.open}>
-                {step === STEPS.length - 1 ? `Confirmar · ${eur(total)}` : 'Continuar'}
+                {step === STEPS.length - 1 ? (preview() ? 'Guardar pré-inscrição' : `Confirmar · ${eur(total)}`) : 'Continuar'}
               </button>
             </div>
           </form>
 
           <aside className="summary" aria-label="Resumo">
             <p className="mono muted" style={{ margin: 0 }}>Resumo</p>
-            <h3 className="cond mt-s">{race.name}</h3>
+            <h2 className="cond mt-s flow-sum-title">{race.name}</h2>
             <p className="muted" style={{ fontSize: 14 }}>{race.start}</p>
             <dl className="kv mt">
               <dt>Vagas</dt><dd>{av.price ? spotsLabel(race, av.left) : '—'}</dd>
@@ -495,7 +505,6 @@ function Done({ id }: { id: string }) {
     return (
       <section className="sec">
         <div className="wrap">
-          <p className="eyebrow">Inscrição</p>
           <h1 className="display flow-title long">Inscrição não encontrada</h1>
           <p className="lede mt">
             Não há nenhuma inscrição <span className="mono">{id}</span> na sessão aberta neste browser. Pode ter sido apagada pela organização,
@@ -527,12 +536,12 @@ function Done({ id }: { id: string }) {
   return (
     <section className="sec tight">
       <div className="wrap">
-        <p className="eyebrow">
-          {cancelled ? `Inscrição · ${race.name}` : paid ? 'Inscrição confirmada' : 'Inscrição registada · falta o pagamento'}
-        </p>
         <h1 className={`display flow-title${cancelled ? ' long' : ''}`}>
           {cancelled ? 'Inscrição cancelada' : `${race.id === 'bike' ? 'Até fevereiro' : 'Até julho'}, ${reg.first}.`}
         </h1>
+        <p className="lede flow-status">
+          {cancelled ? `Inscrição · ${race.name}` : paid ? 'Inscrição confirmada' : preview() ? 'Pré-inscrição guardada · avisamos quando as inscrições abrirem' : 'Inscrição registada · falta o pagamento'}
+        </p>
 
         <div className="flow-done mt-l">
           <div className="info">
@@ -577,10 +586,17 @@ function Done({ id }: { id: string }) {
             ) : (
               <>
                 <div className="row between" style={{ marginBottom: 20 }}>
-                  <span className="mono">Pagamento</span>
+                  <span className="mono">{preview() ? 'A pagar na abertura' : 'Pagamento'}</span>
                   <b style={{ font: '900 32px/1 var(--display)' }}>{eur(reg.priceEur)}</b>
                 </div>
-                <PaymentPanel reg={payReg} />
+                {preview() ? (
+                  <p className="muted" style={{ margin: 0 }}>
+                    {registrationLabel()}. Quando abrirem, recebes um email em {reg.email} para confirmar a vaga e pagar. Até lá não há nada
+                    a pagar.
+                  </p>
+                ) : (
+                  <PaymentPanel reg={payReg} />
+                )}
               </>
             )}
           </aside>
@@ -598,7 +614,9 @@ function Done({ id }: { id: string }) {
                     <p className="muted" style={{ margin: '4px 0 0' }}>
                       {paid
                         ? `Recebido. O dorsal ${reg.bib} é teu.`
-                        : 'A vaga fica reservada, mas a inscrição só conta depois de paga. Podes pagar aqui ou mais tarde na área do atleta.'}
+                        : preview()
+                          ? 'Ainda não há pagamento. Quando as inscrições abrirem, confirmas a vaga e pagas na área do atleta.'
+                          : 'A vaga fica reservada, mas a inscrição só conta depois de paga. Podes pagar aqui ou mais tarde na área do atleta.'}
                     </p>
                   </div></li>
                   <li><div>

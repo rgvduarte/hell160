@@ -1,16 +1,18 @@
-import { Children, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Children, useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { usePrefersReducedMotion } from '../lib/scroll'
 import { IconChevronLeft, IconChevronRight } from './Icons'
 
-// Fila de cartões que se desliza com o dedo (scroll-snap nativo), com o cartão seguinte à vista.
-// Setas redondas e contador "1 / 5" para quem usa rato ou teclado. Sem bibliotecas, sem sequestrar o scroll.
+// Fila de cartões que se desliza com o dedo (scroll-snap nativo, um cartão por gesto), com o cartão seguinte à vista.
+// Setas redondas para quem usa rato ou teclado. O contador "1 / 5" só aparece quando cabe um cartão de cada vez,
+// como no MDS; com vários à vista seria enganador. Sem bibliotecas, sem sequestrar o scroll.
 
 export function Rail({ label, children, className = '' }: { label: string; children: ReactNode; className?: string }) {
   const track = useRef<HTMLUListElement>(null)
+  const trackId = useId()
   const reduced = usePrefersReducedMotion()
   const items = Children.toArray(children)
   const count = items.length
-  const [pos, setPos] = useState({ index: 0, start: true, end: count <= 1 })
+  const [pos, setPos] = useState({ index: 0, start: true, end: count <= 1, perView: 1 })
 
   const step = useCallback(() => {
     const el = track.current
@@ -26,11 +28,17 @@ export function Rail({ label, children, className = '' }: { label: string; child
     let raf = 0
     const measure = () => {
       raf = 0
+      const s = step()
       const max = el.scrollWidth - el.clientWidth
       const start = el.scrollLeft <= 4
       const end = el.scrollLeft >= max - 4
-      const index = end ? count - 1 : Math.min(count - 1, Math.round(el.scrollLeft / step()))
-      setPos((p) => (p.index === index && p.start === start && p.end === end ? p : { index, start, end }))
+      const pad = parseFloat(getComputedStyle(el).paddingLeft) || 0
+      const first = el.children[0] as HTMLElement | undefined
+      const cardW = first?.offsetWidth ?? s
+      // cartões inteiros à vista
+      const perView = Math.max(1, Math.floor((el.clientWidth - 2 * pad - cardW) / s) + 1)
+      const index = end ? count - 1 : Math.min(count - 1, Math.round(el.scrollLeft / s))
+      setPos((p) => (p.index === index && p.start === start && p.end === end && p.perView === perView ? p : { index, start, end, perView }))
     }
     const req = () => {
       if (!raf) raf = requestAnimationFrame(measure)
@@ -50,7 +58,7 @@ export function Rail({ label, children, className = '' }: { label: string; child
 
   return (
     <div className={`rail ${className}`}>
-      <ul className="rail-track" ref={track} aria-label={label} tabIndex={0}>
+      <ul className="rail-track" id={trackId} ref={track} aria-label={label} tabIndex={0}>
         {items.map((c, i) => (
           <li className="rail-item" key={i}>
             {c}
@@ -59,15 +67,17 @@ export function Rail({ label, children, className = '' }: { label: string; child
       </ul>
       {!fits && (
         <div className="wrap rail-ctrl">
-          <button type="button" className="round" aria-label="Anterior" disabled={pos.start} onClick={() => go(-1)}>
+          <button type="button" className="round" aria-label={`${label}: anterior`} aria-controls={trackId} disabled={pos.start} onClick={() => go(-1)}>
             <IconChevronLeft />
           </button>
-          <button type="button" className="round" aria-label="Seguinte" disabled={pos.end} onClick={() => go(1)}>
+          <button type="button" className="round" aria-label={`${label}: seguinte`} aria-controls={trackId} disabled={pos.end} onClick={() => go(1)}>
             <IconChevronRight />
           </button>
-          <span className="rail-count" aria-hidden="true">
-            {pos.index + 1} / {count}
-          </span>
+          {pos.perView === 1 && (
+            <span className="rail-count" aria-hidden="true">
+              {pos.index + 1} / {count}
+            </span>
+          )}
         </div>
       )}
     </div>

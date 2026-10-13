@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
 import { EVENT, RACES, currentPrice, type Race } from '../data/event'
-import { MEDIA, PRESS, RACE_SLOT, TESTIMONIALS, hasMedia, mediaUrl } from '../data/media'
-import { SITE, primaryAction, registrationLabel } from '../data/site'
+import { MEDIA, PRESS, RACE_SLOT, TESTIMONIALS, mediaUrl } from '../data/media'
+import { ROUTE_PUBLISHED, SITE, primaryAction, registrationLabel } from '../data/site'
 import { mapRoute } from '../data/routes'
+import { LISTINGS } from '../data/listings'
 import { allListings } from '../lib/domain'
 import { useCollection } from '../lib/store'
-import { Countdown } from '../components/Graphics'
+import { useDaysTo } from '../components/Graphics'
 import { HeroLettering } from '../components/Logo'
 import { Media, VideoFacade } from '../components/Media'
 import { Rail } from '../components/Rail'
@@ -28,7 +29,7 @@ export function Home() {
       <Practical />
       <Houses />
       <Territory />
-      {hasMedia('video-edicao') && <EditionVideo />}
+      {MEDIA['video-edicao'].video && <EditionVideo />}
       {TESTIMONIALS.length > 0 && <Testimonials />}
       <Closing />
       <Newsletter />
@@ -42,6 +43,7 @@ export function Home() {
 function Hero() {
   const price = currentPrice(MAIN)
   const cta = primaryAction(price?.eur)
+  const days = useDaysTo(EVENT.startISO)
   return (
     <section className="hero" data-hero aria-labelledby="hero-t">
       <Media slot="hero" className="hero-media" tone="night" eager />
@@ -52,7 +54,13 @@ function Hero() {
         </h1>
         <div className="hero-side">
           <p className="hero-when">
-            <span>Sexta, 2 de julho de 2027</span> · <span>22:00</span> · <span>A-do-Pinto, Serpa</span>
+            <span className="hero-when-l">
+              <span>Sexta, 2 de julho de 2027</span>
+              {EVENT.tbc && <span> (data provisória)</span>}
+            </span>
+            <span className="hero-when-l">
+              <span>22:00</span> · <span>A-do-Pinto, Serpa</span>
+            </span>
           </p>
           <div className="hero-actions">
             <Link className="btn ember" to={cta.to}>
@@ -62,10 +70,11 @@ function Hero() {
               Ver as provas
             </a>
           </div>
-          <div className="hero-count">
-            <span>Partida do HELL160 em</span>
-            <Countdown to={EVENT.startISO} />
-          </div>
+          {days > 0 && (
+            <p className="hero-count">
+              Faltam <b>{days}</b> dias para a partida{EVENT.tbc ? ' prevista' : ''}.
+            </p>
+          )}
         </div>
       </div>
     </section>
@@ -82,11 +91,7 @@ function Cause() {
           <Media slot="causa" className="cause-media" sizes="(min-width: 1024px) 50vw, 100vw" />
           <figcaption className="cause-over">
             <span className="cause-num">2</span>
-            <span className="cause-cap">
-              desfibrilhadores já garantidos.
-              <br />
-              Objetivo: um em cada aldeia do percurso.
-            </span>
+            <span className="cause-cap">desfibrilhadores já conseguidos para as aldeias.</span>
           </figcaption>
         </figure>
         <div className="cause-text">
@@ -98,8 +103,8 @@ function Cause() {
             perto.
           </p>
           <p>
-            O HELL160 é organizado para levar desfibrilhadores a estas aldeias e formar quem lá vive para os usar. Os aparelhos ficam instalados
-            depois de os atletas partirem, e a rede cresce a cada edição.
+            O HELL160 é organizado para levar desfibrilhadores a estas aldeias e formar quem lá vive para os usar. Os aparelhos ficam nas aldeias
+            depois de os atletas partirem. Queremos alargar a rede às aldeias do percurso.
           </p>
           <div className="pill-row">
             <Link className="btn" to="/causa">
@@ -145,7 +150,7 @@ function RaceDates({ race }: { race: Race }) {
       <p className="rc-dates">
         <span className="rc-d">
           <b>{label}</b>
-          <i>data a anunciar</i>
+          <span className="rc-tba">Data a anunciar</span>
         </span>
       </p>
     )
@@ -175,12 +180,9 @@ function RaceCard({ race }: { race: Race }) {
   return (
     <article className={`rc${main ? ' rc--main' : ''}`}>
       <Media slot={RACE_SLOT[race.id]} className="rc-media" sizes="(min-width: 1024px) 380px, 80vw" />
-      <span className="rc-big" aria-hidden="true">
-        {race.distanceKm.toLocaleString('pt-PT')}
-        <small>km</small>
-      </span>
       <div className="rc-body">
         <RaceDates race={race} />
+        {main && EVENT.tbc && <p className="rc-note rc-note--date">Data a confirmar</p>}
         <h3 className="rc-name">
           <Link to={`/provas/${race.id}`} className="rc-link">
             {race.name}
@@ -209,15 +211,13 @@ function RacesRow() {
   return (
     <section className="sec races-home" id="provas" aria-labelledby="provas-t">
       <div className="wrap">
-        <header className="sec-head">
+        <header className="sec-head sec-head--center">
           <h2 className="display" id="provas-t">
             As provas
           </h2>
-          <div className="sec-head-text">
-            <p className="lede">
-              HELL160 e HELL100, a solo ou em equipa, no primeiro fim de semana de julho. A HELL100 Bike passa para fevereiro, longe do calor.
-            </p>
-          </div>
+          <p className="lede">
+            HELL160 e HELL100, a solo ou em equipa, no primeiro fim de semana de julho. A HELL100 Bike passa para fevereiro, longe do calor.
+          </p>
         </header>
       </div>
       <Rail label="Provas 2027" className="rail--races">
@@ -234,92 +234,133 @@ function RacesRow() {
   )
 }
 
-/* ---------- 6. dorme na aldeia ---------- */
+/* ---------- 6. dormir na aldeia ---------- */
 
+// Só casas reais (anfitriões aprovados). Enquanto não houver, os factos do alojamento comunitário, sem casas de exemplo.
 function Houses() {
   const hosts = useCollection('hosts')
-  const list = allListings(hosts).slice(0, 8)
+  const real = allListings(hosts)
+    .filter((l) => !LISTINGS.some((x) => x.id === l.id))
+    .slice(0, 8)
   return (
     <section className="sec houses" aria-labelledby="casas-t">
       <div className="wrap">
-        <header className="sec-head">
-          <h2 className="display" id="casas-t">
-            Dorme na aldeia
-          </h2>
-          <div className="sec-head-text">
-            <p className="lede">Aqui não há hotéis. No fim de semana da prova, famílias das aldeias abrem a porta a atletas e a quem os acompanha.</p>
-            <p className="muted">Casas de exemplo enquanto recebemos as primeiras inscrições de anfitriões. O valor da noite fica com quem recebe.</p>
+        <div className="stay-panel">
+          <div className="stay-text">
+            <h2 className="display" id="casas-t">
+              Dormir na aldeia
+            </h2>
+            <p className="lede">Aqui não há hotéis. No fim de semana da prova, famílias das aldeias recebem atletas e quem os acompanha.</p>
           </div>
-        </header>
+          <dl className="stay-facts">
+            <div>
+              <dt>Por noite</dt>
+              <dd>50 a 80 €</dd>
+            </div>
+            <div>
+              <dt>Quem recebe</dt>
+              <dd>Famílias das aldeias, em casa</dd>
+            </div>
+            <div>
+              <dt>O valor da noite</dt>
+              <dd>Fica com a família que recebe</dd>
+            </div>
+          </dl>
+          <div className="pill-row stay-actions">
+            <Link className="btn" to="/alojamento">
+              Ver as casas
+            </Link>
+            <Link className="btn ghost" to="/alojamento/anfitriao">
+              Tenho uma casa
+            </Link>
+          </div>
+        </div>
       </div>
-      <Rail label="Casas nas aldeias" className="rail--houses">
-        {list.map((l) => (
-          <article key={l.id} className="hc">
-            <p className="hc-place">
-              <IconPin size={18} /> {l.village} · {l.kmToStart.toLocaleString('pt-PT')} km da partida
-            </p>
-            <h3 className="hc-name">
-              <Link to={`/alojamento/${l.id}`} className="hc-link">
-                {l.title}
-              </Link>
-            </h3>
-            <blockquote className="hc-note">
-              <p>«{l.note}»</p>
-              <footer>{l.host}</footer>
-            </blockquote>
-            <dl className="hc-facts">
-              <div>
-                <dt>Dormem</dt>
-                <dd>{l.sleeps} pessoas</dd>
-              </div>
-              <div>
-                <dt>Por noite</dt>
-                <dd>{l.eurNight} €</dd>
-              </div>
-            </dl>
-          </article>
-        ))}
-      </Rail>
-      <div className="wrap pill-row">
-        <Link className="btn" to="/alojamento">
-          Ver as casas
-        </Link>
-        <Link className="btn ghost" to="/alojamento/anfitriao">
-          Tenho uma casa
-        </Link>
-      </div>
+      {real.length > 0 && (
+        <Rail label="Casas nas aldeias" className="rail--houses">
+          {real.map((l) => {
+            const note = hosts.find((h) => h.id.toLowerCase() === l.id)?.note?.trim()
+            return (
+              <article key={l.id} className="hc">
+                <p className="hc-place">
+                  <IconPin size={18} /> {l.village} · {l.kmToStart.toLocaleString('pt-PT')} km da partida
+                </p>
+                <h3 className="hc-name">
+                  <Link to={`/alojamento/${l.id}`} className="hc-link">
+                    {l.title}
+                  </Link>
+                </h3>
+                {note && (
+                  <blockquote className="hc-note">
+                    <p>«{note}»</p>
+                    <footer>{l.host}</footer>
+                  </blockquote>
+                )}
+                <dl className="hc-facts">
+                  <div>
+                    <dt>Dormem</dt>
+                    <dd>{l.sleeps} pessoas</dd>
+                  </div>
+                  <div>
+                    <dt>Por noite</dt>
+                    <dd>{l.eurNight} €</dd>
+                  </div>
+                </dl>
+              </article>
+            )
+          })}
+        </Rail>
+      )}
     </section>
   )
 }
 
 /* ---------- 7. território ---------- */
 
+// Com fotografia: fotografia de ponta a ponta e cartão por cima (como os destinos do MDS).
+// Com o traçado oficial publicado: o mapa. Sem nenhum dos dois: só a informação, sem um ecrã vazio.
 function Territory() {
+  const photo = Boolean(MEDIA.territorio.src)
+  const route = ROUTE_PUBLISHED.hell160
+  const mode = photo ? 'photo' : route ? 'map' : 'plain'
   return (
-    <section className="terr" aria-labelledby="terr-t">
-      <div className="terr-map">
-        <TrailMap routes={[mapRoute('hell160')!]} height="var(--terr-map-h)" label="Mapa do percurso do HELL160 na margem esquerda do Guadiana" />
-      </div>
+    <section className={`terr terr--${mode}`} aria-labelledby="terr-t">
+      {mode === 'photo' && (
+        <div className="terr-media">
+          <Media slot="territorio" tone="night" />
+        </div>
+      )}
+      {mode === 'map' && (
+        <div className="terr-map">
+          <TrailMap routes={[mapRoute('hell160')!]} height="var(--terr-map-h)" label="Mapa do percurso do HELL160 na margem esquerda do Guadiana" />
+        </div>
+      )}
       <div className="wrap terr-wrap">
         <div className="terr-card">
           <h2 className="terr-title" id="terr-t">
             Margem esquerda do Guadiana
           </h2>
-          <ul className="terr-facts">
-            <li>
-              <IconRoute size={20} /> <span>GR15 e GR15.2, circular a partir de <span className="nw">A-do-Pinto</span></span>
-            </li>
-            <li>
-              <IconPin size={20} /> <span>Pulo do Lobo, a garganta do Guadiana</span>
-            </li>
-            <li>
-              <IconMoon size={20} /> <span>Partida às 22:00, até duas noites em prova</span>
-            </li>
-          </ul>
-          <p>Estradões de terra, montado de azinho e sobro e as aldeias caiadas que ficam acordadas para ver passar quem ainda corre.</p>
-          <Link className="btn light" to="/territorio">
-            Ver o território
-          </Link>
+          <div className="terr-body">
+            <ul className="terr-facts">
+              <li>
+                <IconRoute size={20} />{' '}
+                <span>
+                  GR15 e GR15.2, circular a partir de <span className="nw">A-do-Pinto</span>
+                </span>
+              </li>
+              <li>
+                <IconPin size={20} /> <span>Pulo do Lobo, a garganta do Guadiana</span>
+              </li>
+              <li>
+                <IconMoon size={20} /> <span>Partida às 22:00, até duas noites em prova</span>
+              </li>
+            </ul>
+            <p>Estradões de terra, montado de azinho e sobro e aldeias caiadas pelo caminho.</p>
+            {!route && <p className="terr-note">O traçado oficial ainda não foi publicado.</p>}
+            <Link className="btn light" to="/territorio">
+              Ver o território
+            </Link>
+          </div>
         </div>
       </div>
     </section>
@@ -370,7 +411,7 @@ function Closing() {
       <Media slot="fecho" className="closing-media" tone="night" />
       <div className="wrap closing-inner">
         <h2 className="closing-title" id="fecho-t">
-          Pronto para a noite de 2 de julho?
+          A partida é às 22:00, no pavilhão de <span className="nw">A-do-Pinto</span>.
         </h2>
         <Link className="btn light" to="/provas">
           Ver todas as provas

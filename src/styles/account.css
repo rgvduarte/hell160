@@ -10,7 +10,7 @@
 .acc-form { max-width: 520px; }
 .acc-form input[aria-invalid='true'] { border-color: var(--ember); }
 .acc-alt { max-width: 520px; border-top: 1px solid var(--line); padding-top: 24px; }
-.acc-page .acc-fine.mono { font-size: 11px; }
+.acc-page .acc-fine.mono { font-size: 13px; }
 
 /* ---------- cabeçalho ---------- */
 .acc-linkerr { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin: 0 0 40px; }

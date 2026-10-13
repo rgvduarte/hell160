@@ -80,7 +80,6 @@ export function Stay() {
     <>
       <section className="sec tight">
         <div className="wrap">
-          <p className="eyebrow">Alojamento comunitário · 1 – 4 julho 2027</p>
           <h1 className="display flow-hero">Dorme na aldeia</h1>
           <div className="flow-hero-foot">
             <p className="lede" style={{ margin: 0 }}>
@@ -292,7 +291,7 @@ export function StayDetail() {
   return (
     <section className="sec tight">
       <div className="wrap">
-        <p className="eyebrow"><Link to={back} style={{ textDecoration: 'none' }}>Alojamento</Link> / {l.village}</p>
+        <nav className="crumbs" aria-label="Estás em"><Link to={back}>Dormir na aldeia</Link> <span aria-hidden="true">/</span> {l.village}</nav>
         <div className="split flow-split wide">
           <div className="stack">
             <HouseWall l={l} className="hp-wall-big" />

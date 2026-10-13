@@ -12,6 +12,25 @@ const SERPA: [number, number] = [-7.6, 37.95]
 export type MapRoute = { id: string; url: string; color?: string; width?: number }
 export type MapMarker = { lngLat: [number, number]; label: string; kind?: 'start' | 'aid' | 'life' | 'poi' }
 
+// Textos dos controlos do mapa em português.
+const LOCALE = {
+  'Map.Title': 'Mapa',
+  'NavigationControl.ZoomIn': 'Aproximar',
+  'NavigationControl.ZoomOut': 'Afastar',
+  'NavigationControl.ResetBearing': 'Repor o norte',
+  'AttributionControl.ToggleAttribution': 'Mostrar atribuição',
+  'AttributionControl.MapFeedback': 'Sugerir correções ao mapa',
+  'FullscreenControl.Enter': 'Ecrã inteiro',
+  'FullscreenControl.Exit': 'Sair do ecrã inteiro',
+  'GeolocateControl.FindMyLocation': 'Mostrar a minha localização',
+  'GeolocateControl.LocationNotAvailable': 'Localização indisponível',
+  'ScaleControl.Meters': 'm',
+  'ScaleControl.Kilometers': 'km',
+  'CooperativeGesturesHandler.WindowsHelpText': 'Usa Ctrl + roda do rato para aproximar o mapa',
+  'CooperativeGesturesHandler.MacHelpText': 'Usa ⌘ + roda do rato para aproximar o mapa',
+  'CooperativeGesturesHandler.MobileHelpText': 'Usa dois dedos para mover o mapa',
+}
+
 const TONES = {
   land: '#f3f2f0',
   water: '#b9c9cf',
@@ -113,6 +132,7 @@ export function TrailMap({
         dragRotate: false,
         pitchWithRotate: false,
         fadeDuration: reduced ? 0 : 300,
+        locale: LOCALE,
       })
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
       map.addControl(

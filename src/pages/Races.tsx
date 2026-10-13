@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
+import { NEWSLETTER, SITE } from '../data/site'
 import { EVENT, MANDATORY_GEAR, RACES, RECOMMENDED_GEAR, currentPrice, raceById, type Race } from '../data/event'
 import { WAYPOINTS } from '../data/route'
 import { ElevationProfile } from '../components/Graphics'
@@ -104,8 +105,7 @@ export function Races() {
     <>
       <section className="sec tight">
         <div className="wrap">
-          <p className="eyebrow">Provas 2027</p>
-          <h1 className="display" style={{ fontSize: 'clamp(56px, 11vw, 168px)' }}>Provas</h1>
+          <h1 className="display" style={{ fontSize: 'clamp(56px, 11vw, 168px)' }}>Provas 2027</h1>
           <p className="lede mt">
             Três formatos a pé no primeiro fim de semana de julho. A bicicleta passa para fevereiro, longe do calor, com o traçado a
             tentar atravessar a fronteira.
@@ -129,8 +129,7 @@ function Gear() {
     <section className="sec rule">
       <div className="wrap split">
         <div>
-          <p className="eyebrow">Regulamento</p>
-          <h2 className="display">O que levas</h2>
+          <h2 className="display" id="material">O que levas</h2>
           <p className="muted mt">
             Material controlado à partida e no percurso. Falta de qualquer item obrigatório implica abandono imediato e desclassificação.
             Nas estafetas, o incumprimento de um elemento afeta a equipa.
@@ -165,9 +164,9 @@ export function RaceDetail() {
     <>
       <section className="sec tight">
         <div className="wrap">
-          <p className="eyebrow">
-            <Link to="/provas" style={{ textDecoration: 'none' }}>Provas</Link> / {race.kind}
-          </p>
+          <nav className="crumbs" aria-label="Estás em">
+            <Link to="/provas">Provas</Link> <span aria-hidden="true">/</span> {race.kind}
+          </nav>
           <h1 className="display cm-race-title" style={{ ['--len' as string]: Math.max(...race.name.split(/\s+/).map((w) => w.length)) }}>
             {race.name}
           </h1>
@@ -184,9 +183,13 @@ export function RaceDetail() {
                 {sp.sold ? (
                   <a className="btn ember" href={waitlistHref(race)}>Lista de espera</a>
                 ) : (
-                  <Link className="btn" to={`/inscricao?prova=${race.id}`}>
-                    Inscrever{p ? ` · ${p.eur} €` : ''}
-                  </Link>
+                  SITE.registration.status === 'abertas' ? (
+                    <Link className="btn" to={`/inscricao?prova=${race.id}`}>
+                      Inscrever{p ? ` · ${p.eur} €` : ''}
+                    </Link>
+                  ) : (
+                    <Link className="btn" to={NEWSLETTER}>Avisem-me quando abrirem</Link>
+                  )
                 )}
                 <Link className="btn ghost" to="/alojamento">Alojamento</Link>
               </div>
@@ -218,7 +221,7 @@ export function RaceDetail() {
       <section className="sec tight">
         <div className="wrap split">
           <div>
-            <h3 className="cond">Preços</h3>
+            <h2 className="cond race-sub">Preços</h2>
             <dl className="kv mt-s">
               {race.prices.map((x) => (
                 <div key={x.until} style={{ display: 'contents' }}>
@@ -227,7 +230,7 @@ export function RaceDetail() {
                 </div>
               ))}
             </dl>
-            <h3 className="cond mt-l">Partida</h3>
+            <h2 className="cond race-sub mt-l">Partida</h2>
             <p className="mono mt-s cm-plain">{race.start}</p>
             <p className="muted">Pavilhão Polivalente de A-do-Pinto, Serpa</p>
             <div className="cm-cal">
@@ -265,7 +268,7 @@ export function RaceDetail() {
       {is160 && (
         <section className="sec night">
           <div className="wrap">
-            <p className="eyebrow">Altimetria e abastecimentos</p>
+            <h2 className="cond" id="abastecimentos" style={{ fontSize: 'clamp(28px, 3vw, 40px)', marginBottom: 16 }}>Altimetria e abastecimentos</h2>
             <div className="cm-svg-open">
               <ElevationProfile height={220} />
             </div>

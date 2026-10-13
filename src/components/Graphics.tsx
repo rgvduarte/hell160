@@ -32,11 +32,17 @@ export function ElevationProfile({
       {[0, 40, 80, 120, 160].map((km) => (
         <g key={km}>
           <line x1={x(km)} x2={x(km)} y1={8} y2={H - 24} className="grid" />
-          <text x={x(km) + 4} y={H - 8} className="tick">
-            {km} km
-          </text>
+          {/* a última marca fica perto da meta: em vez dela, a distância final encostada à direita */}
+          {km < 160 && (
+            <text x={x(km) + 4} y={H - 8} className="tick">
+              {km} km
+            </text>
+          )}
         </g>
       ))}
+      <text x={W - 4} y={H - 8} className="tick" textAnchor="end">
+        {ROUTE_KM.toLocaleString('pt-PT')} km
+      </text>
       <path d={area} className="area" />
       <path d={line} className="line" vectorEffect="non-scaling-stroke" />
       {progressKm != null && <path d={area} className="area-done" clipPath={`url(#${clipId})`} />}
@@ -66,36 +72,12 @@ export function ElevationProfile({
   )
 }
 
-export function useNow(intervalMs = 1000) {
+// Dias que faltam até uma data. Atualiza de hora a hora: no início não há segundos a correr ao lado do botão.
+export function useDaysTo(iso: string) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), intervalMs)
+    const id = window.setInterval(() => setNow(Date.now()), 36e5)
     return () => window.clearInterval(id)
-  }, [intervalMs])
-  return now
-}
-
-export function Countdown({ to }: { to: string }) {
-  const now = useNow()
-  const diff = Math.max(0, new Date(to).getTime() - now)
-  const d = Math.floor(diff / 864e5)
-  const h = Math.floor((diff % 864e5) / 36e5)
-  const m = Math.floor((diff % 36e5) / 6e4)
-  const s = Math.floor((diff % 6e4) / 1e3)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return (
-    <div className="countdown" aria-label={`Faltam ${d} dias`}>
-      {[
-        [d, 'dias'],
-        [pad(h), 'h'],
-        [pad(m), 'min'],
-        [pad(s), 's'],
-      ].map(([v, l]) => (
-        <span key={l}>
-          <b>{v}</b>
-          <i>{l}</i>
-        </span>
-      ))}
-    </div>
-  )
+  }, [])
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - now) / 864e5))
 }

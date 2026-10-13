@@ -7,11 +7,12 @@
   height: 560vh;
   background: var(--sky);
 }
+/* cores sólidas: o texto secundário fica acima de 4,5:1 em todo o céu (ver SKY em ScrollStory.tsx) */
 .story.is-dark {
-  --bg: var(--sky); --fg: #fff; --muted: rgba(255, 255, 255, 0.66); --line: rgba(255, 255, 255, 0.16);
+  --bg: var(--sky); --fg: #fff; --muted: rgba(255, 255, 255, 0.8); --line: rgba(255, 255, 255, 0.16);
 }
 .story.is-light {
-  --bg: var(--sky); --fg: var(--ink); --muted: rgba(17, 17, 17, 0.64); --line: rgba(17, 17, 17, 0.16);
+  --bg: var(--sky); --fg: var(--ink); --muted: #3d3d3d; --line: rgba(17, 17, 17, 0.16);
 }
 .story-pin {
   position: sticky;
@@ -19,55 +20,64 @@
   height: 100svh;
   overflow: hidden;
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: minmax(0, 1fr) auto auto;
   color: var(--fg);
   background: var(--sky);
-  transition: color 300ms ease-out;
+  /* a passagem noite/dia é um salto de cor: suaviza-se no tempo, não no scroll */
+  transition: color 300ms ease-out, background-color 450ms ease-out;
 }
 .story-bar {
   position: absolute; left: 0; right: 0; top: var(--nav-h); height: 3px;
   background: var(--ember); transform-origin: 0 50%; z-index: 2;
 }
+
+/* Céu: a faixa livre do quadro (no computador por cima do relógio e do texto, no telemóvel entre o texto e o perfil).
+   O sol e a lua fazem o arco dentro dela, nunca por cima do texto nem por baixo do cabeçalho.
+   O tamanho acompanha a altura da faixa; se a faixa for curta demais, não aparecem. */
+.story-sky { position: relative; grid-row: 1; margin-top: calc(var(--nav-h) + 3px); pointer-events: none; container-type: size; }
 .story-orb {
   position: absolute;
-  width: clamp(90px, 14vw, 220px);
+  width: min(14vw, 44cqh);
   aspect-ratio: 1;
   border-radius: 50%;
   translate: -50% -50%;
-  pointer-events: none;
-  left: calc(54% + var(--k, 0) * 40%);
-  top: calc(37% - var(--sin, 0) * 21%);
+  left: calc(10% + var(--k, 0) * 80%);
+  top: calc(76% - var(--sin, 0) * 48%);
+}
+@container (max-height: 64px) {
+  .story-orb { display: none; }
 }
 .story-orb.sun { background: var(--ember); }
 .story-orb.moon {
-  width: clamp(48px, 6vw, 96px);
+  width: min(6vw, 30cqh);
   background: transparent;
   box-shadow: inset clamp(-14px, -1.6vw, -8px) clamp(-8px, -0.8vw, -4px) 0 0 #fff;
   opacity: 0.85;
 }
+
 .story-grid {
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: clamp(24px, 5vw, 80px);
+  grid-row: 2;
   align-items: end;
-  padding-top: 120px;
+  padding-top: 16px;
   padding-bottom: 24px;
 }
-.story-kicker { display: flex; gap: 16px; align-items: baseline; margin: 0 0 18px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
-.story-chapter { color: var(--muted); }
+.story-kicker { margin: 0 0 18px; font: 600 15px var(--sans); }
 .story-clock { display: flex; flex-direction: column; gap: 8px; }
-.story-clock .mono { font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.story-day { font: 500 15px var(--sans); color: var(--muted); }
 .story-clock b {
-  font: 500 clamp(76px, 13vw, 200px) / 0.85 var(--mono);
+  font: 700 clamp(76px, 13vw, 200px) / 0.85 var(--display);
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
 }
 .story-data { display: flex; gap: clamp(20px, 3vw, 44px); margin: 28px 0 0; }
 .story-data div { display: flex; flex-direction: column; gap: 4px; }
-.story-data dt { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-.story-data dd { margin: 0; font-size: clamp(20px, 2.2vw, 30px); font-variant-numeric: tabular-nums; }
-.story-text { position: relative; min-height: 9.5em; }
+.story-data dt { font: 500 13px var(--sans); color: var(--muted); }
+.story-data dd { margin: 0; font: 600 clamp(20px, 2.2vw, 30px) var(--sans); font-variant-numeric: tabular-nums; }
+.story-text { position: relative; z-index: 1; min-height: 9.5em; }
 .story-beat {
   position: absolute; left: 0; right: 0; bottom: 80px; margin: 0;
   font: 400 clamp(21px, 2.1vw, 30px) / 1.32 var(--sans);
@@ -80,41 +90,56 @@
   opacity: 1; transform: none;
   transition: opacity 450ms ease-out 200ms, transform 550ms cubic-bezier(0.2, 0.7, 0.2, 1) 200ms;
 }
-.story-beat:not(.on) { transform: translateY(-10px); }
 .story-beat.on ~ .story-beat:not(.on) { transform: translateY(18px); }
 .story-cta { position: absolute; left: 0; bottom: 0; opacity: 0; transform: translateY(12px); transition: opacity 300ms, transform 300ms; }
 .story-cta.on { opacity: 1; transform: none; }
-.story-profile { position: relative; padding-bottom: 20px; }
+.story-profile { position: relative; z-index: 1; grid-row: 3; padding-bottom: 20px; }
 .story-profile .profile .area { fill: currentColor; opacity: 0.12; }
 .story-profile .profile .area-done { fill: var(--ember); opacity: 0.9; }
 .story-profile .profile .marker { stroke: var(--fg); stroke-width: 2; }
 .story-profile .profile .tick { fill: var(--muted); }
-.story-note { margin: 8px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.story-note { margin: 8px 0 0; font: 500 13px var(--sans); color: var(--muted); }
 
+/* Telemóvel: texto em cima, céu no meio (o sol nasce do perfil), perfil em baixo. */
 @media (max-width: 760px) {
   .story { height: 460vh; }
-  .story-grid { grid-template-columns: 1fr; align-items: start; padding-top: 96px; gap: 8px; }
+  .story-pin { grid-template-rows: auto minmax(0, 1fr) auto; }
+  .story-grid { grid-row: 1; grid-template-columns: 1fr; align-items: start; padding-top: calc(var(--nav-h) + 32px); gap: 8px; }
+  .story-sky { grid-row: 2; margin-top: 0; }
+  .story-orb, .story-orb.moon { left: calc(14% + var(--k, 0) * 72%); top: calc(76% - var(--sin, 0) * 52%); }
+  .story-orb.sun { width: min(18vw, 44cqh); }
+  .story-orb.moon { width: min(11vw, 30cqh); }
   .story-clock b { font-size: 22vw; }
   .story-data { margin-top: 16px; }
   .story-text { min-height: 204px; }
   .story-beat { bottom: auto; top: 0; font-size: 19px; }
   .story-cta { top: auto; bottom: 0; }
-  .story-orb { left: calc(50% + var(--k, 0) * 40%); top: calc(46.5% - var(--sin, 0) * 6%); }
-  .story-orb.sun { width: 18vw; }
-  .story-orb.moon { width: 11vw; }
   .story-profile .profile { height: 96px; }
   .story-profile .profile .tick { display: none; }
 }
 
-
-/* tipografia Schibsted */
-.story-kicker { font: 600 15px var(--sans); text-transform: none; letter-spacing: 0; }
-.story-clock .mono { font: 500 15px var(--sans); text-transform: none; letter-spacing: 0; }
-.story-clock b { font: 700 clamp(76px, 13vw, 200px) / 0.85 var(--display); letter-spacing: -0.05em; font-variant-numeric: tabular-nums; }
-.story-data dt { font: 500 13px var(--sans); text-transform: none; letter-spacing: 0; }
-.story-data dd { font-family: var(--sans); font-weight: 600; }
-.story-note { font: 500 13px var(--sans); text-transform: none; letter-spacing: 0; }
-@media (max-width: 760px) { .story-clock b { font-size: 22vw; } }
+/* telemóvel deitado (e ecrãs baixos): duas colunas e tudo dentro dos ~360–430 px de altura, perfil e nota incluídos */
+@media (max-height: 500px) and (orientation: landscape) {
+  .story { height: 520vh; }
+  .story-pin { grid-template-rows: auto minmax(0, 1fr) auto; }
+  .story-grid {
+    grid-row: 1; grid-template-columns: 1fr 1fr; align-items: start; gap: 32px;
+    padding-top: calc(var(--nav-h) + 14px); padding-bottom: 8px;
+  }
+  .story-sky { grid-row: 2; margin-top: 0; }
+  .story-kicker { margin-bottom: 6px; }
+  .story-clock { gap: 4px; }
+  .story-clock b { font-size: 20svh; }
+  .story-data { margin-top: 10px; }
+  .story-data dd { font-size: 18px; }
+  .story-text { min-height: 172px; }
+  .story-beat { bottom: auto; top: 0; font-size: 18px; max-width: 30ch; }
+  .story-cta { top: auto; bottom: 0; }
+  .story-profile { padding-bottom: 10px; }
+  .story-profile .profile { height: 56px; }
+  .story-profile .profile .tick { display: none; }
+  .story-note { margin-top: 4px; }
+}
 
 /* versão estática (movimento reduzido) */
 .story-static-t { margin-bottom: 40px; font-size: clamp(40px, 7.4vw, 88px); }

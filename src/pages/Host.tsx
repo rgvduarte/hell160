@@ -83,7 +83,6 @@ export function Host() {
       <section className="sec tight">
         <div className="wrap split" style={{ alignItems: 'end' }}>
           <div>
-            <p className="eyebrow">Anfitriões</p>
             <h1 className="display flow-title">Abre a casa</h1>
           </div>
           <p className="lede">
@@ -96,10 +95,10 @@ export function Host() {
       <section className="sec tight rule">
         <div className="wrap split">
           <ol className="numlist">
-            <li><div><h3 className="cond">Inscreve a casa</h3><p className="muted">Este formulário. Não precisas de fotografias agora.</p></div></li>
-            <li><div><h3 className="cond">Visita da organização</h3><p className="muted">Alguém da equipa passa, tira fotografias e confirma condições básicas: água quente, camas, ar condicionado ou ventoinhas.</p></div></li>
-            <li><div><h3 className="cond">Recebes pedidos</h3><p className="muted">Aceitas ou recusas na área do anfitrião. Ninguém paga até aceitares.</p></div></li>
-            <li><div><h3 className="cond">Recebes o dinheiro</h3><p className="muted">{Math.round((1 - PLATFORM_FEE) * 100)} % do valor, transferido na semana seguinte à prova. Ajudamos com o registo de alojamento local.</p></div></li>
+            <li><div><h2 className="cond host-step">Inscreve a casa</h2><p className="muted">Este formulário. Não precisas de fotografias agora.</p></div></li>
+            <li><div><h2 className="cond host-step">Visita da organização</h2><p className="muted">Alguém da equipa passa, tira fotografias e confirma condições básicas: água quente, camas, ar condicionado ou ventoinhas.</p></div></li>
+            <li><div><h2 className="cond host-step">Recebes pedidos</h2><p className="muted">Aceitas ou recusas na área do anfitrião. Ninguém paga até aceitares.</p></div></li>
+            <li><div><h2 className="cond host-step">Recebes o dinheiro</h2><p className="muted">{Math.round((1 - PLATFORM_FEE) * 100)} % do valor, transferido na semana seguinte à prova. Ajudamos com o registo de alojamento local.</p></div></li>
           </ol>
 
           <p className="sr-only" role="status">{sent ? `Casa inscrita. Referência ${sent.id}.` : ''}</p>
@@ -219,8 +218,7 @@ function HostLogin() {
     <section className="sec tight rule">
       <div className="wrap split">
         <div>
-          <p className="eyebrow">Já te inscreveste?</p>
-          <h2 className="cond flow-h2">Área do anfitrião</h2>
+          <h2 className="cond flow-h2">Já tens a casa inscrita?</h2>
         </div>
         <div className="stack" style={{ ['--s' as string]: '20px' }}>
           <p className="muted" style={{ margin: 0, maxWidth: '52ch' }}>
