@@ -5,7 +5,6 @@ import { RouteMap } from '../components/RouteMap'
 import { EVENT } from '../data/event'
 import { VILLAGES } from '../data/listings'
 import { add, uid, useCollection, type Lead, type Pledge } from '../lib/store'
-import { eur } from '../lib/domain'
 import { Field } from './Register'
 import '../styles/community.css'
 
@@ -29,12 +28,57 @@ const GOAL_EUR = PROPOSED.length * UNIT_EUR
 const ANYWHERE = 'Onde fizer mais falta'
 const AMOUNTS = [50, 250, UNIT_EUR] as const
 const MIN_EUR = 10
+const MAX_EUR = 50_000
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const digits = (s: string) => s.replace(/\D/g, '')
 const firstName = (s: string) => s.trim().split(/\s+/)[0] ?? ''
 const mailto = (subject: string, body: string) =>
   `mailto:${EVENT.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+
+// Euros em pt-PT; cêntimos só quando existem ("1234,50 €").
+const money = (n: number) =>
+  `${n.toLocaleString('pt-PT', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })} €`
+
+// Aceita "1.234,50", "1234,5", "1 234" e "1,234.50": o último separador com 1 ou 2 casas é o decimal, os outros são milhares.
+function parseEur(input: string) {
+  const t = input.replace(/\s/g, '')
+  if (!t) return NaN
+  const last = Math.max(t.lastIndexOf(','), t.lastIndexOf('.'))
+  const n =
+    last >= 0 && t.length - last - 1 <= 2
+      ? Number(`${t.slice(0, last).replace(/[.,]/g, '')}.${t.slice(last + 1)}`)
+      : Number(t.replace(/[.,]/g, ''))
+  return Math.round(n * 100) / 100
+}
+
+// Depois de um envio falhado, leva o foco ao primeiro campo com erro (os erros só aparecem depois deste render).
+function focusFirstInvalid(form: HTMLFormElement) {
+  requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
+}
+
+// Sem servidor: o registo fica neste browser e só chega à organização por email. Igual nas três confirmações.
+export function SendByEmail({ href, reference, again, onAgain }: {
+  href: string
+  reference: string
+  again: string
+  onAgain: () => void
+}) {
+  return (
+    <>
+      <p className="notice cm-fine">
+        Simulação: o pedido fica guardado só neste browser. A organização só o recebe se o enviares por email.
+      </p>
+      <div className="row">
+        <a className="btn small ember noarrow" href={href}>Enviar por email</a>
+        <button type="button" className="btn small ghost noarrow" onClick={onAgain}>{again}</button>
+      </div>
+      <p className="muted cm-fine">
+        ou escreve para <span className="cm-select">{EVENT.email}</span> e indica a referência {reference}.
+      </p>
+    </>
+  )
+}
 
 // Particulares aparecem só com iniciais: "Teresa Charrua" → "T. C."
 function initials(name: string) {
@@ -97,10 +141,10 @@ export function Safety() {
               <div className="stats mt" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
                 <div><b>2</b><span>instalados</span></div>
                 <div><b className="ember">{PROPOSED.length}</b><span>em falta</span></div>
-                <div><b>{(GOAL_EUR / 1000).toFixed(1).replace('.', ',')}k</b><span>€ estimados</span></div>
+                <div><b className="cm-plain">{(GOAL_EUR / 1000).toFixed(1).replace('.', ',')}k</b><span>€ estimados</span></div>
               </div>
               <DaeProgress className="mt" />
-              <div className="row mt">
+              <div className="row mt cm-cta">
                 <a className="btn ember" href="#patrocinar">Patrocinar um DAE</a>
                 <a className="btn ghost" href="#formacao">Quero formação</a>
               </div>
@@ -116,7 +160,7 @@ export function Safety() {
             <p className="eyebrow">Patrocinar um DAE</p>
             <h2 className="cond cm-h2">Um aparelho por aldeia</h2>
             <p className="muted mt-s" style={{ maxWidth: '46ch' }}>
-              {eur(UNIT_EUR)} pagam um desfibrilhador, o armário exterior e a formação de quem mora perto. Qualquer valor conta para o
+              {money(UNIT_EUR)} pagam um desfibrilhador, o armário exterior e a formação de quem mora perto. Qualquer valor conta para o
               total. Empresas aparecem com o nome na lista de apoios; particulares só com as iniciais.
             </p>
             <DaeBackers />
@@ -201,7 +245,7 @@ export function DaeNetwork() {
             <li key={a.place}>
               <span>{a.place}</span>
               <span className="right">
-                {a.status === 'proposto' && pledged > 0 && <span className="amt">{eur(pledged)} prometidos</span>}
+                {a.status === 'proposto' && pledged > 0 && <span className="amt">{money(pledged)} prometidos</span>}
                 <span className={a.status === 'instalado' ? 'tag ember' : pledged >= UNIT_EUR ? 'tag solid' : 'tag'}>
                   {a.status === 'instalado' ? 'instalado' : pledged >= UNIT_EUR ? 'coberto' : 'proposto'}
                 </span>
@@ -210,7 +254,7 @@ export function DaeNetwork() {
           )
         })}
       </ul>
-      <p className="mono muted mt-s">Localizações propostas · custo unitário estimado {eur(UNIT_EUR)} (DAE, armário, formação)</p>
+      <p className="mono muted mt-s cm-plain">Localizações propostas · custo unitário estimado {money(UNIT_EUR)} (DAE, armário, formação)</p>
     </div>
   )
 }
@@ -222,9 +266,9 @@ export function DaeProgress({ className = '' }: { className?: string }) {
   const units = total / UNIT_EUR
   return (
     <figure className={`cm-progress ${className}`}>
-      <div className="head">
-        <b>{eur(total)}</b>
-        <span className="mono muted">de {eur(GOAL_EUR)} · {pct} %</span>
+      <div className="cm-head">
+        <b>{money(total)}</b>
+        <span className="mono muted">de {money(GOAL_EUR)} · {pct} %</span>
       </div>
       <div
         className="cm-cells"
@@ -233,7 +277,7 @@ export function DaeProgress({ className = '' }: { className?: string }) {
         aria-valuemin={0}
         aria-valuemax={GOAL_EUR}
         aria-valuenow={Math.min(total, GOAL_EUR)}
-        aria-valuetext={`${eur(total)} prometidos de ${eur(GOAL_EUR)}`}
+        aria-valuetext={`${money(total)} prometidos de ${money(GOAL_EUR)}`}
         aria-label="Compromissos para desfibrilhadores"
       >
         {PROPOSED.map((a, i) => (
@@ -242,7 +286,7 @@ export function DaeProgress({ className = '' }: { className?: string }) {
           </span>
         ))}
       </div>
-      <figcaption className="foot mono muted">
+      <figcaption className="cm-foot mono muted cm-plain">
         <span>Compromissos registados</span>
         <span>Cada célula, um DAE</span>
       </figcaption>
@@ -273,7 +317,7 @@ export function DaeBackers() {
             {shown.map((p) => (
               <li key={p.id}>
                 <span className="who">{p.kind === 'empresa' ? p.name : initials(p.name)}</span>
-                <span className="val">{eur(p.amountEur)}</span>
+                <span className="val">{money(p.amountEur)}</span>
                 <span className="where">{p.kind === 'empresa' ? 'Empresa' : 'Particular'} · {p.place}</span>
               </li>
             ))}
@@ -305,18 +349,21 @@ export function DaePledgeForm() {
     if (done) doneRef.current?.focus()
   }, [done])
 
-  const value = amount === 'outro' ? Math.round(Number(other.replace(',', '.')) || 0) : amount
+  const value = amount === 'outro' ? parseEur(other) || 0 : amount
   const errors = {
     name: !name.trim() ? (kind === 'empresa' ? 'Indica o nome da empresa.' : 'Indica o teu nome.') : '',
     email: !EMAIL_RE.test(email.trim()) ? 'Email inválido.' : '',
-    amount: value < MIN_EUR ? `Valor mínimo ${MIN_EUR} €.` : '',
+    amount:
+      value < MIN_EUR ? `Valor mínimo ${MIN_EUR} €.` : value > MAX_EUR ? `Para valores acima de ${money(MAX_EUR)}, escreve-nos.` : '',
   }
   const invalid = Object.values(errors).some(Boolean)
+  const valueOk = value >= MIN_EUR && value <= MAX_EUR
 
-  function submit(e: FormEvent) {
+  function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (invalid) {
       setTried(true)
+      focusFirstInvalid(e.currentTarget)
       return
     }
     const p: Pledge = {
@@ -348,12 +395,13 @@ export function DaePledgeForm() {
       `Referência: ${done.id}`,
       `${done.kind === 'empresa' ? 'Empresa' : 'Nome'}: ${done.name}`,
       `Email: ${done.email}`,
-      `Valor: ${eur(done.amountEur)}`,
+      `Valor: ${money(done.amountEur)}`,
       `Local: ${done.place}`,
     ].join('\n')
+    const subject = `Patrocínio DAE · ${done.id}`
     return (
       <div ref={doneRef} tabIndex={-1} className="summary cm-static cm-done stack" style={{ ['--s' as string]: '20px' }} role="status">
-        <p className="mono ember" style={{ margin: 0 }}>Compromisso registado</p>
+        <p className="mono ember" style={{ margin: 0 }}>Compromisso registado neste browser</p>
         <h3 className="cond">Obrigado{done.kind === 'particular' ? `, ${firstName(done.name)}` : ''}.</h3>
         <div>
           <span className="mono muted">Referência</span>
@@ -361,19 +409,11 @@ export function DaePledgeForm() {
         </div>
         <dl className="kv">
           <dt>{done.kind === 'empresa' ? 'Empresa' : 'Nome'}</dt><dd>{done.name}</dd>
-          <dt>Valor</dt><dd>{eur(done.amountEur)}</dd>
+          <dt>Valor</dt><dd>{money(done.amountEur)}</dd>
           <dt>Local</dt><dd>{done.place}</dd>
         </dl>
-        <p className="cm-fine">
-          Nada é cobrado agora. A organização responde para <strong>{done.email}</strong> com os dados para pagamento e recibo.
-        </p>
-        <p className="notice cm-fine">
-          Este site ainda não tem servidor: o compromisso fica guardado neste browser. Para chegar já à organização, envia também por email.
-        </p>
-        <div className="row">
-          <a className="btn small ghost noarrow" href={mailto(`Patrocínio DAE · ${done.id}`, body)}>Enviar também por email</a>
-          <button type="button" className="btn small ghost noarrow" onClick={reset}>Novo compromisso</button>
-        </div>
+        <p className="cm-fine">Nada é cobrado aqui. Com o email, a organização responde com os dados para pagamento e recibo.</p>
+        <SendByEmail href={mailto(subject, body)} reference={done.id} again="Novo compromisso" onAgain={reset} />
       </div>
     )
   }
@@ -412,7 +452,7 @@ export function DaePledgeForm() {
         <div className="chips cm-amounts" role="group" aria-labelledby="dae-valor">
           {AMOUNTS.map((a) => (
             <button type="button" key={a} className="chip" aria-pressed={amount === a} onClick={() => setAmount(a)}>
-              {eur(a)}
+              {money(a)}
               {a === UNIT_EUR && <small>um DAE completo</small>}
             </button>
           ))}
@@ -426,10 +466,10 @@ export function DaePledgeForm() {
           id="dae-outro"
           label="Outro valor (€)"
           value={other}
-          onChange={(v) => setOther(v.replace(/[^\d,.]/g, ''))}
-          inputMode="numeric"
+          onChange={(v) => setOther(v.replace(/[^\d,.\s]/g, ''))}
+          inputMode="decimal"
           placeholder="100"
-          hint={`Mínimo ${MIN_EUR} €.`}
+          hint={`Mínimo ${MIN_EUR} €, máximo ${money(MAX_EUR)}.`}
           error={tried ? errors.amount : ''}
         />
       )}
@@ -441,7 +481,7 @@ export function DaePledgeForm() {
           {PROPOSED.map((a) => (
             <option key={a.place} value={a.place}>
               {a.place}{a.km > 0 ? ` · km ${a.km.toFixed(1).replace('.', ',')}` : ''}
-              {remaining(a.place) === 0 ? ' · coberto' : ` · faltam ${eur(remaining(a.place))}`}
+              {remaining(a.place) === 0 ? ' · coberto' : ` · faltam ${money(remaining(a.place))}`}
             </option>
           ))}
         </select>
@@ -449,9 +489,12 @@ export function DaePledgeForm() {
 
       <div className="total">
         <span className="mono">Compromisso</span>
-        <b>{value >= MIN_EUR ? eur(value) : '—'}</b>
+        <b>{valueOk ? money(value) : '—'}</b>
       </div>
-      <p className="muted cm-fine">Nada é cobrado agora. A organização confirma por email e envia os dados para pagamento e recibo.</p>
+      <p className="muted cm-fine">
+        Nada é cobrado aqui. Depois de registar, envia o compromisso por email: a organização responde com os dados para pagamento e
+        recibo.
+      </p>
       <button className="btn ember">Registar compromisso</button>
       <p className="muted cm-fine">
         Preferes tratar por email? <a href={mailto('Patrocínio de desfibrilhadores HELL160', '')}>{EVENT.email}</a>
@@ -478,10 +521,11 @@ export function TrainingForm() {
   }
   const invalid = Object.values(errors).some(Boolean)
 
-  function submit(e: FormEvent) {
+  function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (invalid) {
       setTried(true)
+      focusFirstInvalid(e.currentTarget)
       return
     }
     const lead: Lead = {
@@ -515,24 +559,21 @@ export function TrainingForm() {
     ]
       .filter(Boolean)
       .join('\n')
+    const subject = `Formação SBV/DAE · ${done.village} · ${done.id}`
     return (
       <div ref={doneRef} tabIndex={-1} className="summary cm-static cm-done stack" style={{ ['--s' as string]: '20px' }} role="status">
-        <p className="mono ember" style={{ margin: 0 }}>Pedido registado</p>
+        <p className="mono ember" style={{ margin: 0 }}>Pedido registado neste browser</p>
         <h3 className="cond">Obrigado, {firstName(done.name)}.</h3>
         <div>
           <span className="mono muted">Referência</span>
           <p className="cm-ref">{done.id}</p>
         </div>
-        <p className="cm-fine">
-          Juntamos o teu pedido aos de {done.village} e ligamos para <strong>{done.phone}</strong> quando houver data para a sessão.
-        </p>
-        <p className="notice cm-fine">
-          Este site ainda não tem servidor: o pedido fica guardado neste browser. Para chegar já à organização, envia também por email.
-        </p>
-        <div className="row">
-          <a className="btn small ghost noarrow" href={mailto(`Formação SBV/DAE · ${done.village} · ${done.id}`, body)}>Enviar também por email</a>
-          <button type="button" className="btn small ghost noarrow" onClick={reset}>Novo pedido</button>
-        </div>
+        <dl className="kv">
+          <dt>Aldeia</dt><dd>{done.village}</dd>
+          <dt>Telefone</dt><dd>{done.phone}</dd>
+        </dl>
+        <p className="cm-fine">Com o email, a organização junta o pedido aos de {done.village} e liga quando houver data para a sessão.</p>
+        <SendByEmail href={mailto(subject, body)} reference={done.id} again="Novo pedido" onAgain={reset} />
       </div>
     )
   }

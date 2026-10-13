@@ -1,11 +1,11 @@
-import { useRef, useState, type ChangeEvent, type FormEvent, type HTMLAttributes } from 'react'
-import { Link, useLocation, useSearchParams } from 'react-router-dom'
-import { RACES, currentPrice, raceById, type Race } from '../data/event'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type HTMLAttributes } from 'react'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { EVENT, RACES, currentPrice, raceById, type Race } from '../data/event'
 import { EVENT_NIGHTS } from '../data/listings'
-import { HousePlate } from '../components/HousePlate'
+import { HousePicker, stayProblem, type StayPick } from '../components/HousePicker'
 import { PaymentPanel } from '../components/PaymentPanel'
-import { activeRegs, allListings, download, eur, findListing, fmtDate, raceICS, spotsLeft, takenNights } from '../lib/domain'
-import { add, getAll, sameEmail, uid, useCollection, type Registration } from '../lib/store'
+import { activeRegs, allListings, download, eur, findListing, fmtDate, raceICS, spotsLeft } from '../lib/domain'
+import { add, getAll, sameEmail, setSessionEmail, uid, useCollection, useSessionEmail, type Registration } from '../lib/store'
 import '../styles/flows.css'
 
 const STEPS = ['Prova', 'Atleta', 'Segurança', 'Alojamento', 'Confirmar']
@@ -36,18 +36,64 @@ function spotsLabel(race: Race, left: number) {
   return `${left} de ${race.places} vagas`
 }
 
-// Cada navegação para /inscricao (ex.: o botão do menu) começa uma inscrição nova.
+// Dia de cada prova, para a idade mínima. A bike ainda não tem data: conta 1 de fevereiro.
+const RACE_DAY: Record<string, string> = {
+  hell160: '2027-07-02', hell100: '2027-07-03', relay2: '2027-07-03', relay4: '2027-07-03', bike: '2027-02-01',
+}
+
+// ---------- rascunho: sobrevive ao Back/Forward e ao recarregar a página ----------
+// Guardado por entrada do histórico (location.key): uma navegação nova para /inscricao começa vazia.
+// O atestado (File) não é serializável: fica só em memória, enquanto a página não recarrega.
+
+const DRAFT = 'hell160.regdraft'
+type Saved = { key: string; d: Draft; step: number; accepted: boolean; pick?: StayPick }
+const DEFAULT_PICK: StayPick = { nights: ['2027-07-02', '2027-07-03'], guests: 1 }
+let certMemo: { key: string; file: File } | null = null
+
+function loadDraft(key: string): Saved | null {
+  try {
+    const s = JSON.parse(sessionStorage.getItem(DRAFT) ?? 'null') as Saved | null
+    return s && s.key === key && s.d && raceById(s.d.race) ? s : null
+  } catch {
+    return null
+  }
+}
+
+function saveDraft(s: Saved) {
+  try {
+    sessionStorage.setItem(DRAFT, JSON.stringify(s))
+  } catch {
+    /* sem armazenamento: o rascunho fica só em memória */
+  }
+}
+
+function clearDraft() {
+  certMemo = null
+  try {
+    sessionStorage.removeItem(DRAFT)
+  } catch {
+    /* ignorar */
+  }
+}
+
+// /inscricao?ref=H27-…  mostra a inscrição feita (pagamento e dorsal), também depois de recarregar.
+// Cada navegação nova para /inscricao (ex.: o botão do menu) começa uma inscrição nova.
 export function Register() {
-  const { key } = useLocation()
+  const { key, search } = useLocation()
+  const ref = new URLSearchParams(search).get('ref')
+  if (ref) return <Done id={ref.trim().toUpperCase()} />
   return <RegisterFlow key={key} />
 }
 
 function RegisterFlow() {
   const [params] = useSearchParams()
+  const { key } = useLocation()
+  const navigate = useNavigate()
   const regs = useCollection('registrations')
   const hosts = useCollection('hosts')
   const bookings = useCollection('bookings')
   const top = useRef<HTMLOListElement>(null)
+  const [saved] = useState(() => loadDraft(key))
 
   // ?prova= escolhe a prova à entrada, se ainda tiver vagas
   const [wanted] = useState(() => {
@@ -57,6 +103,7 @@ function RegisterFlow() {
     return { race: w, open: a.open, full: !!a.price && a.left === 0 }
   })
   const [d, setD] = useState<Draft>(() => {
+    if (saved) return saved.d
     const now = getAll().registrations
     const race = wanted?.open ? wanted.race : (RACES.find((r) => availability(r, now).open) ?? RACES[0])
     return {
@@ -64,20 +111,27 @@ function RegisterFlow() {
       emergencyName: '', emergencyPhone: '', device: 'phone+watch', shirt: 'M', stayId: undefined,
     }
   })
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState(() => Math.min(saved?.step ?? 0, STEPS.length - 1))
   const [tried, setTried] = useState<number[]>([])
   const [touched, setTouched] = useState<string[]>([])
-  const [cert, setCert] = useState<File | null>(null)
+  const [cert, setCert] = useState<File | null>(() => (certMemo?.key === key ? certMemo.file : null))
   const [certErr, setCertErr] = useState('')
-  const [accepted, setAccepted] = useState(false)
+  const [accepted, setAccepted] = useState(saved?.accepted ?? false)
+  const [pick, setPick] = useState<StayPick>(saved?.pick ?? DEFAULT_PICK)
   const [raceNote, setRaceNote] = useState(
-    wanted && !wanted.open
+    !saved && wanted && !wanted.open
       ? wanted.full
         ? `${wanted.race.name} está esgotado. Escolhe outra prova.`
         : `As inscrições para ${wanted.race.name} estão fechadas. Escolhe outra prova.`
       : '',
   )
-  const [doneId, setDoneId] = useState<string | null>(null)
+  const created = useRef(false)
+
+  useEffect(() => {
+    if (created.current) return
+    saveDraft({ key, d, step, accepted, pick })
+    certMemo = cert ? { key, file: cert } : null
+  }, [key, d, step, accepted, cert, pick])
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((x) => ({ ...x, [k]: v }))
   const touch = (k: string) => () => setTouched((t) => (t.includes(k) ? t : [...t, k]))
@@ -88,18 +142,15 @@ function RegisterFlow() {
   const total = (av.price?.eur ?? 0) + extra
   const listings = allListings(hosts)
   const stay = d.stayId ? findListing(d.stayId, hosts) : undefined
-  const near = listings.filter((l) => l.kmToStart < 13).sort((a, b) => a.kmToStart - b.kmToStart).slice(0, 8)
-  const freeNights = (id: string) => {
-    const taken = takenNights(id, bookings)
-    return EVENT_NIGHTS.filter((n) => !taken.has(n.iso)).length
-  }
+  const stayIssue = stayProblem(stay, pick, bookings)
+  const stayTotal = stay ? stay.eurNight * pick.nights.length : 0
   const duplicate = EMAIL_RE.test(d.email.trim()) ? activeRegs(regs, d.race).find((r) => sameEmail(r.email, d.email)) : undefined
 
   const errors: Errors[] = [
     av.open ? {} : { race: av.price ? `${race.name} esgotou. Escolhe outra prova.` : `As inscrições para ${race.name} estão fechadas.` },
-    athleteErrors(d, certErr),
+    athleteErrors(d),
     safetyErrors(d),
-    {},
+    stayIssue ? { stayId: stayIssue } : {},
     accepted ? {} : { accept: 'Para concluir tens de aceitar o regulamento e o termo de responsabilidade.' },
   ]
   const show = (k: ErrKey) => (tried.includes(step) || touched.includes(k) ? errors[step][k] : undefined)
@@ -112,8 +163,12 @@ function RegisterFlow() {
 
   function next(e: FormEvent) {
     e.preventDefault()
-    if (Object.keys(errors[step]).length > 0 || (step === 1 && duplicate)) {
-      setTried((t) => (t.includes(step) ? t : [...t, step]))
+    // no último passo revalida tudo (ex.: rascunho recuperado com dados que deixaram de valer)
+    const bad = step === STEPS.length - 1 ? errors.findIndex((x, i) => Object.keys(x).length > 0 || (i === 1 && !!duplicate)) : -1
+    const at = bad >= 0 ? bad : step
+    if (Object.keys(errors[at]).length > 0 || (at === 1 && duplicate)) {
+      setTried((t) => (t.includes(at) ? t : [...t, at]))
+      if (at !== step) goTo(at)
       requestAnimationFrame(() => document.querySelector<HTMLElement>('.flow-form [aria-invalid="true"]')?.focus())
       return
     }
@@ -146,7 +201,26 @@ function RegisterFlow() {
     if (!reg.stayId) delete reg.stayId
     if (cert) reg.medical = { fileName: cert.name, size: cert.size, uploadedAt: now, status: 'em validação' }
     add('registrations', reg)
-    setDoneId(reg.id)
+    // a casa escolhida segue logo como pedido de reserva ao anfitrião
+    if (stay && !stayProblem(stay, pick, getAll().bookings)) {
+      add('bookings', {
+        id: uid('R27'),
+        createdAt: now,
+        listingId: stay.id,
+        nights: pick.nights,
+        guests: pick.guests,
+        name: `${reg.first} ${reg.last}`,
+        email: reg.email,
+        phone: reg.phone,
+        totalEur: stay.eurNight * pick.nights.length,
+        status: 'pedido',
+      })
+    }
+    created.current = true
+    clearDraft()
+    // a sessão da área do atleta abre já; o URL com ?ref= mantém o ecrã de pagamento ao recarregar
+    setSessionEmail(reg.email)
+    navigate(`/inscricao?ref=${reg.id}`, { replace: true })
     window.scrollTo(0, 0)
   }
 
@@ -160,8 +234,6 @@ function RegisterFlow() {
     setCertErr('')
     setCert(f)
   }
-
-  if (doneId) return <Done id={doneId} />
 
   return (
     <section className="sec tight">
@@ -214,7 +286,7 @@ function RegisterFlow() {
                   <Field label="Telemóvel" type="tel" value={d.phone} onChange={(v) => set('phone', v)} onBlur={touch('phone')} error={show('phone')}
                     autoComplete="tel" inputMode="tel" placeholder="912 345 678" hint="O número que levas na prova. Fora de Portugal, com indicativo." />
                   <Field label="Data de nascimento" type="date" value={d.birth} onChange={(v) => set('birth', v)} onBlur={touch('birth')} error={show('birth')}
-                    hint="Idade mínima: 18 anos no dia da prova." />
+                    hint={ageHint(d.race)} />
                   <div className="field">
                     <label htmlFor="nat">Nacionalidade</label>
                     <select id="nat" value={d.nationality} onChange={(e) => set('nationality', e.target.value)}>
@@ -248,15 +320,17 @@ function RegisterFlow() {
                       )}
                     </div>
                     <span id="cert-hint" className={certErr ? 'hint flow-err' : 'hint'} role={certErr ? 'alert' : undefined}>
-                      {certErr || `PDF ou fotografia, até ${CERT_MAX_MB} MB. Obrigatório, mas podes enviar mais tarde na área do atleta, até 15 de junho de 2027.`}
+                      {certErr
+                        ? `${certErr} Também podes continuar sem atestado e enviá-lo mais tarde na área do atleta.`
+                        : `PDF ou fotografia, até ${CERT_MAX_MB} MB. Obrigatório, mas podes enviar mais tarde na área do atleta, até 15 de junho de 2027.`}
                     </span>
                   </div>
                 </div>
                 {duplicate && (
                   <p className="notice flow-block" role="alert">
-                    Já existe uma inscrição ativa em {race.name} com {d.email.trim()} (<span className="mono">{duplicate.id}</span>). Para a ver ou
-                    pagar, <Link to={`/conta?email=${encodeURIComponent(d.email.trim())}`}>entra na área do atleta</Link>. Para inscrever outra pessoa,
-                    usa o email dela.
+                    Já existe uma inscrição ativa em {race.name} com este email. Para a ver ou pagar,{' '}
+                    <Link to={`/conta?email=${encodeURIComponent(d.email.trim())}`}>entra na área do atleta</Link> com a referência que recebeste.
+                    Para inscrever outra pessoa, usa o email dela.
                   </p>
                 )}
               </>
@@ -296,39 +370,27 @@ function RegisterFlow() {
             {step === 3 && (
               <>
                 <p className="lede" style={{ margin: 0 }}>
-                  Precisas de cama? Estas casas ficam a menos de 13 km da partida. Escolher aqui não reserva: no fim abrimos a página da casa para
-                  fazeres o pedido ao anfitrião.
+                  Onde vais dormir? Casas de famílias das aldeias, perto da partida. Escolhe as noites e a casa: o pedido segue para o
+                  anfitrião quando confirmares a inscrição, e só pagas a casa quando a reserva for aceite.
                 </p>
-                <div className="choice flow-choice flow-houses" role="radiogroup" aria-label="Alojamento">
-                  <label>
-                    <input type="radio" name="stay" checked={!d.stayId} onChange={() => set('stayId', undefined)} />
-                    <span className="flow-none">
-                      <strong>Já tenho onde ficar</strong>
-                      <span className="muted" style={{ display: 'block', fontSize: 14 }}>Podes procurar casa mais tarde.</span>
+                <HousePicker
+                  listings={listings}
+                  bookings={bookings}
+                  selectedId={d.stayId}
+                  pick={pick}
+                  onSelect={(id) => set('stayId', id)}
+                  onPick={setPick}
+                />
+                {show('stayId') && <p className="flow-err-line" role="alert">{errors[3].stayId}</p>}
+                {stay && (
+                  <div className="hp-sticky" role="status">
+                    <span>
+                      <strong>{stay.title}</strong>
+                      <span className="muted"> · {pick.nights.length} {pick.nights.length === 1 ? 'noite' : 'noites'} · {eur(stayTotal)}</span>
                     </span>
-                    <span />
-                  </label>
-                  {near.map((l) => {
-                    const free = freeNights(l.id)
-                    return (
-                      <label key={l.id}>
-                        <input type="radio" name="stay" checked={d.stayId === l.id} disabled={free === 0} onChange={() => set('stayId', l.id)} />
-                        <span className="flow-thumb" aria-hidden="true"><HousePlate listing={l} /></span>
-                        <span>
-                          <strong>{l.title}</strong>
-                          <span className="muted" style={{ display: 'block', fontSize: 14 }}>
-                            {l.village} · {l.sleeps} pessoas · {l.kmToStart.toLocaleString('pt-PT')} km da partida
-                          </span>
-                          <span className={`flow-left${free > 0 && free < EVENT_NIGHTS.length ? ' low' : ''}`}>
-                            {free === 0 ? 'Sem noites livres' : `${free} de ${EVENT_NIGHTS.length} noites livres`}
-                          </span>
-                        </span>
-                        <span className="mono flow-price">{eur(l.eurNight)}<small>/ noite</small></span>
-                      </label>
-                    )
-                  })}
-                </div>
-                <Link to="/alojamento" className="mono">Ver todas as casas →</Link>
+                    <button className="btn small">Continuar</button>
+                  </div>
+                )}
               </>
             )}
 
@@ -345,7 +407,7 @@ function RegisterFlow() {
                   <dt>Tracking</dt><dd>{deviceLabel(d.device)}</dd>
                   <dt>T-shirt</dt><dd>{d.shirt}</dd>
                   <dt>Atestado</dt><dd>{cert ? cert.name : 'Envias mais tarde, até 15 jun 2027'}</dd>
-                  <dt>Alojamento</dt><dd>{stay ? `${stay.title}, ${stay.village}` : '—'}</dd>
+                  <dt>Alojamento</dt><dd>{stay ? `${stay.title}, ${stay.village} · ${pick.nights.length} ${pick.nights.length === 1 ? 'noite' : 'noites'} · ${eur(stayTotal)} (pedido ao anfitrião)` : '—'}</dd>
                 </dl>
                 <label className="flow-check">
                   <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} aria-invalid={show('accept') ? true : undefined}
@@ -378,9 +440,13 @@ function RegisterFlow() {
               <dt>Escalão de preço</dt><dd>{av.price?.label ?? 'fechado'}</dd>
             </dl>
             {stay && (
-              <p className="muted" style={{ fontSize: 14, marginTop: 16, marginBottom: 0 }}>
-                {stay.title}, {eur(stay.eurNight)}/noite. O alojamento paga-se à parte, ao anfitrião, depois de ele aceitar o pedido.
-              </p>
+              <div className="hp-summary">
+                <p style={{ margin: 0 }}><strong>{stay.title}</strong>, {stay.village}</p>
+                <p className="muted" style={{ margin: '4px 0 0', fontSize: 14 }}>
+                  {pick.nights.length} {pick.nights.length === 1 ? 'noite' : 'noites'} · {pick.guests} {pick.guests === 1 ? 'pessoa' : 'pessoas'} · {eur(stayTotal)}
+                </p>
+                <p className="muted" style={{ margin: '4px 0 0', fontSize: 13 }}>Pago ao anfitrião quando a reserva for aceite. Não entra no total da inscrição.</p>
+              </div>
             )}
             <div className="total"><span className="mono">Total</span><b>{eur(total)}</b></div>
           </aside>
@@ -390,7 +456,7 @@ function RegisterFlow() {
   )
 }
 
-function athleteErrors(d: Draft, certErr: string): Errors {
+function athleteErrors(d: Draft): Errors {
   const e: Errors = {}
   if (!d.first.trim()) e.first = 'Falta o nome.'
   if (!d.last.trim()) e.last = 'Falta o apelido.'
@@ -400,8 +466,8 @@ function athleteErrors(d: Draft, certErr: string): Errors {
   else if (!phoneOk(d.phone)) e.phone = 'Número inválido: pelo menos 9 dígitos. Fora de Portugal, com indicativo (+34…).'
   if (!d.birth) e.birth = 'Falta a data de nascimento.'
   else if (d.birth < '1920-01-01' || Number.isNaN(Date.parse(d.birth))) e.birth = 'Data inválida.'
-  else if (!isAdult(d.birth)) e.birth = 'Idade mínima: 18 anos no dia da prova.'
-  if (certErr) e.cert = certErr
+  else if (d.birth > adultCutoff(d.race))
+    e.birth = `Idade mínima: 18 anos no dia da prova. Para ${raceById(d.race)?.name ?? 'esta prova'}, nascido até ${fmtDay(adultCutoff(d.race))}.`
   return e
 }
 
@@ -420,7 +486,10 @@ function safetyErrors(d: Draft): Errors {
 function Done({ id }: { id: string }) {
   const regs = useCollection('registrations')
   const hosts = useCollection('hosts')
-  const reg = regs.find((r) => r.id === id)
+  const bookings = useCollection('bookings')
+  const session = useSessionEmail()
+  // só quem tem a sessão desse email vê a inscrição pelo URL
+  const reg = regs.find((r) => r.id.toUpperCase() === id && sameEmail(r.email, session))
 
   if (!reg)
     return (
@@ -428,25 +497,42 @@ function Done({ id }: { id: string }) {
         <div className="wrap">
           <p className="eyebrow">Inscrição</p>
           <h1 className="display flow-title long">Inscrição não encontrada</h1>
-          <p className="lede mt">A inscrição {id} já não existe neste browser. Pode ter sido apagada pela organização.</p>
-          <Link className="btn mt" to="/inscricao">Nova inscrição</Link>
+          <p className="lede mt">
+            Não há nenhuma inscrição <span className="mono">{id}</span> na sessão aberta neste browser. Pode ter sido apagada pela organização,
+            ou saíste da área do atleta.
+          </p>
+          <div className="row mt">
+            <Link className="btn" to="/conta">Entrar na área do atleta</Link>
+            <Link className="btn ghost" to="/inscricao">Nova inscrição</Link>
+          </div>
         </div>
       </section>
     )
 
   const race = raceById(reg.race) ?? RACES[0]
-  const paid = reg.status === 'paga'
+  const cancelled = reg.status === 'cancelada'
+  const paid = !cancelled && reg.status === 'paga'
   const stay = reg.stayId ? findListing(reg.stayId, hosts) : undefined
   const account = `/conta?${new URLSearchParams({ email: reg.email, ref: reg.id })}`
   const stayLink = stay && `/alojamento/${stay.id}?${new URLSearchParams({ nome: `${reg.first} ${reg.last}`, email: reg.email, tel: reg.phone })}`
+  // pedido de reserva criado com a inscrição (mesma casa, mesmo email)
+  const stayBooking = stay ? bookings.filter((b) => b.listingId === stay.id && sameEmail(b.email, reg.email)).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] : undefined
+  const nightsText = (isos: string[]) => EVENT_NIGHTS.filter((n) => isos.includes(n.iso)).map((n) => n.label.toLowerCase()).join(', ')
   const ics = raceICS(reg.race)
   const method = reg.payment?.method === 'mbway' ? 'MB WAY' : reg.payment?.method === 'cartao' ? 'cartão' : 'Multibanco'
+  const mail = `mailto:${EVENT.email}?subject=${encodeURIComponent(`Inscrição ${reg.id}`)}`
+  // PaymentPanel só aceita 9xxxxxxxx: tira o indicativo +351 / 00351 ao número pré-preenchido
+  const payReg = { ...reg, phone: mbwayPhone(reg.phone) }
 
   return (
     <section className="sec tight">
       <div className="wrap">
-        <p className="eyebrow">{paid ? 'Inscrição confirmada' : 'Inscrição registada · falta o pagamento'}</p>
-        <h1 className="display flow-title">{race.id === 'bike' ? 'Até fevereiro' : 'Até julho'}, {reg.first}.</h1>
+        <p className="eyebrow">
+          {cancelled ? `Inscrição · ${race.name}` : paid ? 'Inscrição confirmada' : 'Inscrição registada · falta o pagamento'}
+        </p>
+        <h1 className={`display flow-title${cancelled ? ' long' : ''}`}>
+          {cancelled ? 'Inscrição cancelada' : `${race.id === 'bike' ? 'Até fevereiro' : 'Até julho'}, ${reg.first}.`}
+        </h1>
 
         <div className="flow-done mt-l">
           <div className="info">
@@ -456,13 +542,28 @@ function Done({ id }: { id: string }) {
               <dt>Partida</dt><dd>{race.start}</dd>
               <dt>Atleta</dt><dd>{reg.first} {reg.last}</dd>
               <dt>Total</dt><dd>{eur(reg.priceEur)}</dd>
-              <dt>Estado</dt><dd>{paid ? 'Paga' : 'Pendente de pagamento'}</dd>
+              <dt>Estado</dt><dd>{cancelled ? 'Cancelada' : paid ? 'Paga' : 'Pendente de pagamento'}</dd>
             </dl>
             <p className="muted flow-fine" style={{ marginTop: 16 }}>Guarda a referência: entras na área do atleta com ela e com o teu email.</p>
           </div>
 
-          <aside className="pay-col summary" aria-live="polite">
-            {paid ? (
+          <aside className="pay-col summary" aria-label={cancelled ? 'Inscrição cancelada' : 'Pagamento'}>
+            <p className="sr-only" role="status">{paid ? `Pago. Dorsal ${reg.bib}.` : cancelled ? 'Inscrição cancelada.' : ''}</p>
+            {cancelled ? (
+              <div className="flow-bibbox">
+                <p className="mono ember" style={{ margin: 0 }}>Cancelada</p>
+                <p style={{ margin: '12px 0 0' }}>
+                  Esta inscrição já não está ativa e não há nada a pagar. A vaga voltou a ficar disponível.
+                </p>
+                <p className="muted" style={{ margin: '12px 0 24px', fontSize: 15 }}>
+                  Se não pediste o cancelamento, ou se já tinhas pago, escreve para{' '}
+                  <a href={mail} style={{ overflowWrap: 'anywhere' }}>{EVENT.email}</a> com a referência.
+                </p>
+                <div className="row">
+                  <Link className="btn" to="/inscricao">Nova inscrição</Link>
+                </div>
+              </div>
+            ) : paid ? (
               <div className="flow-bibbox">
                 <p className="mono ember" style={{ margin: 0 }}>
                   Pago · {method}{reg.payment?.paidAt ? ` · ${fmtDate(reg.payment.paidAt)}` : ''}
@@ -479,63 +580,85 @@ function Done({ id }: { id: string }) {
                   <span className="mono">Pagamento</span>
                   <b style={{ font: '900 32px/1 var(--display)' }}>{eur(reg.priceEur)}</b>
                 </div>
-                <PaymentPanel reg={reg} />
+                <PaymentPanel reg={payReg} />
               </>
             )}
           </aside>
 
           <div className="next">
-            <ol className="numlist">
-              <li><div>
-                <strong>Pagamento</strong>
-                <p className="muted" style={{ margin: '4px 0 0' }}>
-                  {paid
-                    ? `Recebido. O dorsal ${reg.bib} é teu.`
-                    : 'A vaga fica reservada, mas a inscrição só conta depois de paga. Podes pagar aqui ou mais tarde na área do atleta.'}
+            {cancelled ? (
+              <div className="row">
+                <Link className="btn ghost" to={account}>Área do atleta</Link>
+              </div>
+            ) : (
+              <>
+                <ol className="numlist">
+                  <li><div>
+                    <strong>Pagamento</strong>
+                    <p className="muted" style={{ margin: '4px 0 0' }}>
+                      {paid
+                        ? `Recebido. O dorsal ${reg.bib} é teu.`
+                        : 'A vaga fica reservada, mas a inscrição só conta depois de paga. Podes pagar aqui ou mais tarde na área do atleta.'}
+                    </p>
+                  </div></li>
+                  <li><div>
+                    <strong>Atestado médico</strong>
+                    <p className="muted" style={{ margin: '4px 0 0' }}>
+                      {reg.medical
+                        ? `Recebemos ${reg.medical.fileName} (${fileSize(reg.medical.size)}). Está em validação pela organização.`
+                        : 'Envia na área do atleta até 15 de junho de 2027.'}
+                    </p>
+                  </div></li>
+                  <li><div>
+                    <strong>Material obrigatório</strong>
+                    <p className="muted" style={{ margin: '4px 0 0' }}>Confirma a lista na área do atleta antes de vir.</p>
+                  </div></li>
+                  {stay && (
+                    <li><div>
+                      <strong>Alojamento</strong>
+                      <p className="muted" style={{ margin: '4px 0 0' }}>
+                        {stayBooking
+                          ? stayBooking.status === 'confirmado'
+                            ? `${stay.host} aceitou: ${stay.title}, ${nightsText(stayBooking.nights)}. Total ${eur(stayBooking.totalEur)}.`
+                            : stayBooking.status === 'pedido'
+                              ? `Pedido enviado a ${stay.host}: ${stay.title}, ${nightsText(stayBooking.nights)}, ${stayBooking.guests} ${stayBooking.guests === 1 ? 'pessoa' : 'pessoas'}, ${eur(stayBooking.totalEur)}. Recebes resposta em 48 horas e só pagas a casa quando a reserva for aceite.`
+                              : `O pedido para ${stay.title} já não está ativo. Escolhe outra casa em Dormir na aldeia.`
+                          : `Escolheste ${stay.title}, em ${stay.village}. Falta enviar o pedido a ${stay.host}.`}
+                      </p>
+                    </div></li>
+                  )}
+                </ol>
+                <div className="row mt">
+                  <Link className="btn" to={account}>Área do atleta</Link>
+                  {stayLink && !stayBooking ? (
+                    <Link className="btn ghost" to={stayLink}>Concluir reserva da casa</Link>
+                  ) : stayBooking ? (
+                    <Link className="btn ghost" to={`/alojamento/${stay!.id}`}>Ver a casa</Link>
+                  ) : (
+                    <Link className="btn ghost" to="/alojamento">Procurar alojamento</Link>
+                  )}
+                  {ics && (
+                    <button type="button" className="btn ghost noarrow small" onClick={() => download(`${race.id}-2027.ics`, ics, 'text/calendar;charset=utf-8')}>
+                      Calendário (.ics)
+                    </button>
+                  )}
+                </div>
+                <p className="mt">
+                  <Link className="mono" to="/inscricao">Inscrever outra pessoa →</Link>
                 </p>
-              </div></li>
-              <li><div>
-                <strong>Atestado médico</strong>
-                <p className="muted" style={{ margin: '4px 0 0' }}>
-                  {reg.medical
-                    ? `Recebemos ${reg.medical.fileName} (${fileSize(reg.medical.size)}). Está em validação pela organização.`
-                    : 'Envia na área do atleta até 15 de junho de 2027.'}
-                </p>
-              </div></li>
-              <li><div>
-                <strong>Material obrigatório</strong>
-                <p className="muted" style={{ margin: '4px 0 0' }}>Confirma a lista na área do atleta antes de vir.</p>
-              </div></li>
-              {stay && (
-                <li><div>
-                  <strong>Alojamento</strong>
-                  <p className="muted" style={{ margin: '4px 0 0' }}>
-                    Escolheste {stay.title}, em {stay.village}. Falta escolher as noites e enviar o pedido a {stay.host}.
-                  </p>
-                </div></li>
-              )}
-            </ol>
-            <div className="row mt">
-              <Link className="btn" to={account}>Área do atleta</Link>
-              {stayLink ? (
-                <Link className="btn ghost" to={stayLink}>Concluir reserva da casa</Link>
-              ) : (
-                <Link className="btn ghost" to="/alojamento">Procurar alojamento</Link>
-              )}
-              {ics && (
-                <button type="button" className="btn ghost noarrow small" onClick={() => download(`${race.id}-2027.ics`, ics, 'text/calendar;charset=utf-8')}>
-                  Calendário (.ics)
-                </button>
-              )}
-            </div>
-            <p className="mt">
-              <Link className="mono" to="/inscricao">Inscrever outra pessoa →</Link>
-            </p>
+              </>
+            )}
           </div>
         </div>
       </div>
     </section>
   )
+}
+
+// Número para o MB WAY: +351 912 345 678 → 912 345 678. Outros formatos ficam como estão.
+function mbwayPhone(phone: string) {
+  const n = phone.replace(/\D/g, '').replace(/^(00)?351/, '')
+  return /^9\d{8}$/.test(n) ? n.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3') : phone
 }
 
 // ---------- campo de texto partilhado (Stay, Host, HostArea, Partners) ----------
@@ -579,9 +702,21 @@ export function Field({
   )
 }
 
-function isAdult(birth: string) {
-  return new Date(birth) <= new Date('2009-07-02')
+// Nasceu até esta data → tem 18 anos no dia da prova.
+function adultCutoff(raceId: string) {
+  const day = RACE_DAY[raceId] ?? RACE_DAY.hell160
+  return `${+day.slice(0, 4) - 18}${day.slice(4)}`
 }
+
+function ageHint(raceId: string) {
+  const day = RACE_DAY[raceId] ?? RACE_DAY.hell160
+  return raceId === 'bike'
+    ? `Idade mínima: 18 anos a ${fmtDay(day)} (a data da prova ainda não está marcada).`
+    : `Idade mínima: 18 anos no dia da prova, ${fmtDay(day)}.`
+}
+
+const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+const fmtDay = (iso: string) => `${+iso.slice(8, 10)} ${MONTHS[+iso.slice(5, 7) - 1]} ${iso.slice(0, 4)}`
 
 function fileSize(bytes: number) {
   return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1).replace('.', ',')} MB`

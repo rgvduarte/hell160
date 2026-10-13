@@ -81,17 +81,34 @@ function statusOf(rn: Runner, h: number) {
   return { ...p, fin, phoneOk, lastCp, st }
 }
 
-const fmt = (h: number) => {
+// Relógio da prova: partida sexta às 22:00. Devolve as partes para o separador ficar fora dos algarismos tabulares.
+const clockParts = (h: number) => {
   const total = Math.round(h * 60)
   const day = 22 * 60 + total
   const hh = Math.floor(day / 60) % 24
   const mm = day % 60
   const dlabel = day < 24 * 60 ? 'Sex' : day < 48 * 60 ? 'Sáb' : 'Dom'
-  return `${dlabel} ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
+  return { dlabel, hh: String(hh).padStart(2, '0'), mm: String(mm).padStart(2, '0') }
 }
 const elapsed = (h: number) => {
   const m = Math.round(h * 60)
   return `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`
+}
+
+// Uma casa decimal com vírgula (pt-PT).
+const dec1 = (n: number) => n.toLocaleString('pt-PT', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+
+// Em Schibsted Grotesk, os algarismos tabulares também alargam a vírgula e os dois pontos ("104 , 6").
+// O separador vai num span com algarismos normais; os dígitos continuam tabulares.
+function Dec({ n }: { n: number }) {
+  const [int, frac] = dec1(n).split(',')
+  return (
+    <>
+      {int}
+      {frac != null && <span className="cm-plain">,</span>}
+      {frac}
+    </>
+  )
 }
 
 // ---------- pesquisa ----------
@@ -174,12 +191,14 @@ async function copyText(text: string) {
 export function Live() {
   const [h, setH] = useState(13.6)
   const [speed, setSpeed] = useState(0)
-  const [view, setView] = useState<'org' | 'public'>('org')
+  // página pública: só a vista pública (último ponto de controlo). A vista da organização vive no back-office.
+  const view = 'public' as 'org' | 'public'
   const [query, setQuery] = useState('')
   const [onlyFollowed, setOnlyFollowed] = useState(false)
   const [follow, toggleFollow] = useFollow()
   const [copied, setCopied] = useState<'ok' | 'fail' | null>(null)
   const boardRef = useRef<HTMLDivElement>(null)
+  const qRef = useRef<HTMLInputElement>(null)
 
   // O dorsal selecionado vive no URL (?dorsal=123), para o link poder ser partilhado. Trocar de atleta substitui a entrada do histórico.
   const [params, setParams] = useSearchParams()
@@ -219,7 +238,10 @@ export function Live() {
         .map((r, i) => ({ ...r, pos: r.s.st === 'out' ? null : i + 1 })),
     [h],
   )
-  const visible = rows.filter((r) => (!onlyFollowed || follow.includes(r.rn.bib)) && matches(r.rn, query))
+  const inScope = (bib: number) => !onlyFollowed || follow.includes(bib)
+  const visible = rows.filter((r) => inScope(r.rn.bib) && matches(r.rn, query))
+  // Vista pública: SOS e falta de rede são informação da organização; o público vê "Em prova".
+  const shownSt = (st: St): St => (view === 'public' && (st === 'sos' || st === 'warn') ? 'ok' : st)
   const sos = rows.filter((r) => r.s.st === 'sos')
   const selected = rows.find((r) => r.rn.bib === sel)
   const counts = {
@@ -229,6 +251,7 @@ export function Live() {
   }
 
   // Linha escolhida (pesquisa, link, mapa) sempre visível dentro da tabela, quando a tabela tem scroll próprio.
+  // Conta só a parte da tabela que está no ecrã: ao abrir um link, o fundo da tabela fica abaixo da dobra.
   // Sem ?dorsal= no URL a tabela abre no topo, com a liderança à vista.
   useEffect(() => {
     const box = boardRef.current
@@ -237,9 +260,12 @@ export function Live() {
     if (!row) return
     const head = box.querySelector('thead')?.getBoundingClientRect().height ?? 0
     const b = box.getBoundingClientRect()
+    const top = b.top + head
+    const bottom = Math.min(b.bottom, window.innerHeight)
     const r = row.getBoundingClientRect()
-    if (r.top < b.top + head || r.bottom > b.bottom) {
-      box.scrollTop += r.top - b.top - head - (b.height - head - r.height) / 2
+    if (bottom - top < r.height) return // a tabela não está à vista
+    if (r.top < top || r.bottom > bottom) {
+      box.scrollTop += r.top - top - (bottom - top - r.height) / 2
     }
     // corre só quando muda o atleta, não a cada atualização do relógio
   }, [sel])
@@ -248,8 +274,9 @@ export function Live() {
     setQuery(v)
     const q = fold(v).replace(/^#/, '')
     if (!q) return
-    const exact = /^\d+$/.test(q) && BIBS.has(Number(q)) ? Number(q) : null
-    const hits = RUNNERS.filter((rn) => matches(rn, v))
+    // mesmo critério da tabela: com "Só os que sigo" ativo, só escolhe entre os atletas seguidos
+    const exact = /^\d+$/.test(q) && BIBS.has(Number(q)) && inScope(Number(q)) ? Number(q) : null
+    const hits = RUNNERS.filter((rn) => inScope(rn.bib) && matches(rn, v))
     if (exact != null) setSel(exact)
     else if (hits.length === 1) setSel(hits[0].bib)
   }
@@ -288,6 +315,13 @@ export function Live() {
   }, [copied])
 
   const followed = (bib: number) => follow.includes(bib)
+  const clock = clockParts(h)
+  const hiddenByFollow = onlyFollowed && query.trim() !== '' && rows.some((r) => matches(r.rn, query))
+
+  function clearQuery() {
+    setQuery('')
+    qRef.current?.focus()
+  }
 
   return (
     <section className="night cm-live" style={{ minHeight: 'calc(100svh - 64px)' }}>
@@ -295,15 +329,12 @@ export function Live() {
         <div className="row between" style={{ alignItems: 'end' }}>
           <div>
             <p className="eyebrow" style={{ marginBottom: 8 }}>HELL160 · Live · simulação</p>
-            <div className="clock">{fmt(h)} <span className="muted" style={{ fontSize: '0.5em' }}>+{elapsed(h)}</span></div>
+            <div className="clock">
+              {clock.dlabel} {clock.hh}<span className="cm-plain">:</span>{clock.mm}{' '}
+              <span className="muted" style={{ fontSize: '0.5em' }}>+{elapsed(h)}</span>
+            </div>
           </div>
           <div className="controls">
-            {(['org', 'public'] as const).map((v) => (
-              <button key={v} className="chip" aria-pressed={view === v} onClick={() => setView(v)}>
-                {v === 'org' ? 'Organização' : 'Público'}
-              </button>
-            ))}
-            <span style={{ width: 16 }} />
             {[0, 600, 3600].map((s) => (
               <button key={s} className="chip" aria-pressed={speed === s} onClick={() => setSpeed(s)}>
                 {s === 0 ? 'Pausa' : s === 600 ? '×600' : '×3600'}
@@ -315,7 +346,7 @@ export function Live() {
           type="range" min={0} max={36} step={0.05} value={h} onChange={(e) => setH(+e.target.value)}
           aria-label="Tempo de prova" style={{ width: '100%', accentColor: 'var(--ember)', marginTop: 16 }}
         />
-        <div className="row mono muted" style={{ gap: '6px 24px', fontSize: 12 }}>
+        <div className="row mono muted cm-plain" style={{ gap: '6px 24px', fontSize: 12 }}>
           <span>Em prova {counts.race}</span><span>Chegados {counts.fin}</span><span>Desistências {counts.out}</span>
           <span>Sem rede móvel: km {NO_COVERAGE[0]}–{NO_COVERAGE[1]}</span>
         </div>
@@ -326,7 +357,7 @@ export function Live() {
 
       {view === 'org' && sos.map(({ rn, s }) => (
         <div key={rn.bib} className="alert" role="alert">
-          <span><b>SOS · #{rn.bib} {rn.name}</b> · km {s.km.toFixed(1)} · posição por relógio e telemóvel · equipa de resgate 2 a caminho</span>
+          <span><b>SOS · #{rn.bib} {rn.name}</b> · km {dec1(s.km)} · posição por relógio e telemóvel · equipa de resgate 2 a caminho</span>
           <button className="chip" style={{ borderColor: 'currentColor', color: 'inherit' }} onClick={() => setSel(rn.bib)}>Ver</button>
         </div>
       ))}
@@ -363,7 +394,9 @@ export function Live() {
             <div className="mt">
               <div className="cm-runner-head">
                 <h3 className="cond">#{selected.rn.bib} {selected.rn.name} <span className="muted">· {selected.rn.country}</span></h3>
-                <span className="mono">{selected.s.km.toFixed(1)} / {ROUTE_KM} km</span>
+                <span className="mono">
+                  <Dec n={selected.s.km} /> / <Dec n={ROUTE_KM} /> km
+                </span>
               </div>
               <div className="cm-runner-actions mt-s">
                 <button
@@ -389,9 +422,9 @@ export function Live() {
                 <ElevationProfile height={140} marks progressKm={selected.s.km} />
               </div>
               <dl className="kv mt-s" style={{ maxWidth: 560 }}>
-                <dt>Estado</dt><dd>{ST_LABEL[selected.s.st]}{selected.pos ? ` · ${selected.pos}.º` : ''}</dd>
-                <dt>Último controlo</dt><dd>{selected.s.lastCp?.name} · km {selected.s.lastCp?.km.toFixed(1)}</dd>
-                <dt>Ritmo médio</dt><dd>{h > 0 && selected.s.km > 0 ? `${((h * 60) / selected.s.km).toFixed(1)} min/km` : '—'}</dd>
+                <dt>Estado</dt><dd>{ST_LABEL[shownSt(selected.s.st)]}{selected.pos ? ` · ${selected.pos}.º` : ''}</dd>
+                <dt>Último controlo</dt><dd>{selected.s.lastCp?.name} · km {dec1(selected.s.lastCp?.km ?? 0)}</dd>
+                <dt>Ritmo médio</dt><dd>{h > 0 && selected.s.km > 0 ? `${dec1((h * 60) / selected.s.km)} min/km` : '—'}</dd>
                 {view === 'org' && (
                   <>
                     <dt>Telemóvel</dt><dd style={{ color: selected.s.phoneOk ? undefined : '#e0a43a' }}>{selected.s.phoneOk ? 'GPS + rede · há 1 min' : 'Sem rede · último sinal no km ' + NO_COVERAGE[0]}</dd>
@@ -409,6 +442,7 @@ export function Live() {
             <div className="cm-search">
               <label htmlFor="live-q" className="sr-only">Procurar por dorsal ou nome</label>
               <input
+                ref={qRef}
                 id="live-q"
                 type="search"
                 value={query}
@@ -419,7 +453,7 @@ export function Live() {
                 enterKeyHint="search"
               />
               {query && (
-                <button type="button" onClick={() => setQuery('')}>Limpar</button>
+                <button type="button" onClick={clearQuery}>Limpar</button>
               )}
             </div>
             <div className="row between" style={{ gap: 8 }}>
@@ -442,7 +476,8 @@ export function Live() {
               <tbody>
                 {visible.map(({ rn, s, pos }) => {
                   const isSel = rn.bib === sel
-                  const dot = s.st === 'fin' ? '' : view === 'public' && s.st !== 'out' ? '' : s.st
+                  const st = shownSt(s.st)
+                  const dot = st === 'fin' || st === 'ok' ? '' : st
                   return (
                     <tr
                       key={rn.bib}
@@ -456,10 +491,15 @@ export function Live() {
                       <td>{pos ?? '—'}</td>
                       <td>{rn.bib}</td>
                       <td className="cm-name">{rn.name}</td>
-                      <td>{s.fin ? 'META' : s.st === 'out' ? (s.rescued ? 'RESG.' : 'DNF') : (view === 'public' ? s.lastCp?.km.toFixed(0) : s.km.toFixed(1))}</td>
                       <td>
-                        <span className={`st ${dot}`} title={ST_LABEL[s.st]} />
-                        <span className="sr-only">{ST_LABEL[s.st]}</span>
+                        {s.fin ? 'META'
+                          : s.st === 'out' ? (s.rescued && view === 'org' ? <span className="cm-plain">RESG.</span> : 'DNF')
+                          : view === 'public' ? (s.lastCp?.km ?? 0).toFixed(0)
+                          : <Dec n={s.km} />}
+                      </td>
+                      <td>
+                        <span className={`st ${dot}`} title={ST_LABEL[st]} />
+                        <span className="sr-only">{ST_LABEL[st]}</span>
                       </td>
                       <td className="cm-fcol">
                         <button
@@ -482,7 +522,9 @@ export function Live() {
                     <td colSpan={6}>
                       {onlyFollowed && follow.length === 0
                         ? 'Ainda não segues ninguém. Carrega no + ao lado de um atleta para o acompanhares aqui.'
-                        : `Nenhum atleta corresponde a «${query.trim()}».`}
+                        : hiddenByFollow
+                          ? `Nenhum dos atletas que segues corresponde a «${query.trim()}».`
+                          : `Nenhum atleta corresponde a «${query.trim()}».`}
                     </td>
                   </tr>
                 )}

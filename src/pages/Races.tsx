@@ -8,6 +8,38 @@ import { download, raceICS, spotsLeft } from '../lib/domain'
 import { NotFound } from './NotFound'
 import '../styles/community.css'
 
+const pl = (n: number, one: string, many: string) => (n === 1 ? one : many)
+
+// Números em pt-PT (vírgula decimal). Em Schibsted Grotesk, os algarismos tabulares também alargam a vírgula
+// ("164 , 6"): o separador vai num span com algarismos normais.
+function Num({ n, fixed = false }: { n: number; fixed?: boolean }) {
+  const s = n.toLocaleString('pt-PT', { minimumFractionDigits: fixed ? 1 : 0, maximumFractionDigits: 1 })
+  const i = s.indexOf(',')
+  if (i < 0) return <>{s}</>
+  return (
+    <>
+      {s.slice(0, i)}
+      <span className="cm-plain">,</span>
+      {s.slice(i + 1)}
+    </>
+  )
+}
+
+// raceICS() marca as horas com TZID=Europe/Lisbon mas sem bloco VTIMEZONE, que o RFC 5545 (3.2.19) exige;
+// alguns clientes (Outlook) importam então a hora errada. Aqui passam a UTC. Se o .ics já vier em UTC, fica igual.
+function lisbonToUtc(local: string) {
+  const [y, mo, d, h, mi, se] = [0, 4, 6, 9, 11, 13].map((i, k) => +local.slice(i, i + (k ? 2 : 4)))
+  const asUtc = Date.UTC(y, mo - 1, d, h, mi, se)
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Lisbon', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(new Date(asUtc))
+  const get = (t: string) => +(parts.find((p) => p.type === t)?.value ?? 0)
+  const offset = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second')) - asUtc
+  return `${new Date(asUtc - offset).toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`
+}
+const icsInUtc = (ics: string) =>
+  ics.replace(/(DTSTART|DTEND);TZID=Europe\/Lisbon:(\d{8}T\d{6})/g, (_m, prop: string, local: string) => `${prop}:${lisbonToUtc(local)}`)
+
 // Vagas restantes de uma prova, já formatadas. `low` assinala os últimos 10 % (mínimo 5 lugares).
 function spots(race: Race, regs: Registration[]) {
   const left = spotsLeft(race, regs)
@@ -40,12 +72,12 @@ export function RaceTable() {
               {r.name}
               <small>{r.kind} · {r.start}</small>
             </span>
-            <span className="v">{r.distanceKm} km<small>distância</small></span>
+            <span className="v"><Num n={r.distanceKm} /> km<small>distância</small></span>
             <span className="v hide-sm">{r.gainM} m<small>D+</small></span>
             <span className="v hide-sm">{r.limitH} h<small>limite</small></span>
             <span className={`v hide-sm cm-left${sp.low || sp.sold ? ' low' : ''}`}>
               {sp.sold ? '0' : sp.text}
-              <small>{sp.sold ? 'esgotado' : 'vagas'}</small>
+              <small>{sp.sold ? 'esgotado' : pl(sp.left, 'vaga', 'vagas')}</small>
             </span>
             <span className="go">
               {sp.sold ? (
@@ -55,7 +87,7 @@ export function RaceTable() {
                 </>
               ) : (
                 <>
-                  {sp.finite && <span className={`cm-sm-only cm-left${sp.low ? ' low' : ''}`}>{sp.text} vagas · </span>}
+                  {sp.finite && <span className={`cm-sm-only cm-left${sp.low ? ' low' : ''}`}>{sp.text} {pl(sp.left, 'vaga', 'vagas')} · </span>}
                   {p ? `${p.eur} € →` : 'Inscrições fechadas'}
                 </>
               )}
@@ -144,8 +176,8 @@ export function RaceDetail() {
             <div className="stack" style={{ ['--s' as string]: '16px' }}>
               <p className="muted" style={{ margin: 0 }}>{race.startNote}</p>
               {sp.sold && (
-                <p className="mono cm-soldout" style={{ marginBottom: 0 }}>
-                  Esgotado · {race.places} vagas preenchidas
+                <p className="mono cm-plain cm-soldout" style={{ marginBottom: 0 }}>
+                  Esgotado · {race.places} {pl(race.places ?? 0, 'vaga preenchida', 'vagas preenchidas')}
                 </p>
               )}
               <div className="row">
@@ -166,14 +198,18 @@ export function RaceDetail() {
             </div>
           </div>
           <div className="stats mt-l">
-            <div><b>{race.distanceKm}</b><span>km</span></div>
+            <div><b className="cm-plain">{race.distanceKm.toLocaleString('pt-PT', { maximumFractionDigits: 1 })}</b><span>km</span></div>
             <div><b>{race.gainM}</b><span>m D+</span></div>
-            <div><b>{race.limitH}</b><span>horas limite</span></div>
-            <div><b>{race.aid}</b><span>abastecimentos</span></div>
-            <div><b>{race.lifeBases}</b><span>bases de vida</span></div>
+            <div><b>{race.limitH}</b><span>{pl(race.limitH, 'hora limite', 'horas limite')}</span></div>
+            <div><b>{race.aid}</b><span>{pl(race.aid, 'abastecimento', 'abastecimentos')}</span></div>
+            <div><b>{race.lifeBases}</b><span>{pl(race.lifeBases, 'base de vida', 'bases de vida')}</span></div>
             <div>
               <b className={sp.sold ? 'ember cm-word' : sp.low ? 'ember' : undefined}>{sp.sold ? 'Esgotado' : sp.text}</b>
-              <span>{sp.sold ? `${race.places} vagas` : race.places != null ? `vagas de ${race.places}` : 'vagas'}</span>
+              <span>
+                {sp.sold
+                  ? `${race.places} ${pl(race.places ?? 0, 'vaga', 'vagas')}`
+                  : `${pl(sp.left, 'vaga', 'vagas')}${race.places != null ? ` de ${race.places}` : ''}`}
+              </span>
             </div>
           </div>
         </div>
@@ -192,7 +228,7 @@ export function RaceDetail() {
               ))}
             </dl>
             <h3 className="cond mt-l">Partida</h3>
-            <p className="mono mt-s">{race.start}</p>
+            <p className="mono mt-s cm-plain">{race.start}</p>
             <p className="muted">Pavilhão Polivalente de A-do-Pinto, Serpa</p>
             <div className="cm-cal">
               {ics ? (
@@ -200,11 +236,11 @@ export function RaceDetail() {
                   <button
                     type="button"
                     className="btn small ghost noarrow"
-                    onClick={() => download(`hell160-${race.id}.ics`, raceICS(race.id) ?? ics, 'text/calendar;charset=utf-8')}
+                    onClick={() => download(`hell160-${race.id}.ics`, icsInUtc(raceICS(race.id) ?? ics), 'text/calendar;charset=utf-8')}
                   >
                     Adicionar ao calendário
                   </button>
-                  <span className="mono muted">Ficheiro .ics · data provisória</span>
+                  <span className="mono muted cm-plain">Ficheiro .ics · data provisória</span>
                 </>
               ) : (
                 <span className="tag">Data a anunciar</span>
@@ -214,8 +250,10 @@ export function RaceDetail() {
           <div>
             {is160 ? (
               <>
-                <RouteMap />
-                <p className="mono muted mt-s">Mapa esquemático · o GPX oficial é enviado após confirmação da inscrição</p>
+                <div className="cm-svg-open">
+                  <RouteMap />
+                </div>
+                <p className="mono muted mt-s cm-plain">Mapa esquemático · o GPX oficial é enviado após confirmação da inscrição</p>
               </>
             ) : (
               <p className="notice">O traçado desta prova é publicado com o regulamento 2027.</p>
@@ -228,7 +266,9 @@ export function RaceDetail() {
         <section className="sec night">
           <div className="wrap">
             <p className="eyebrow">Altimetria e abastecimentos</p>
-            <ElevationProfile height={220} />
+            <div className="cm-svg-open">
+              <ElevationProfile height={220} />
+            </div>
             <table className="board mt">
               <thead>
                 <tr><th>km</th><th>Ponto</th><th>Tipo</th><th>Δ km</th></tr>
@@ -236,15 +276,15 @@ export function RaceDetail() {
               <tbody>
                 {WAYPOINTS.map((w, i) => (
                   <tr key={i} style={{ cursor: 'default' }}>
-                    <td>{w.km.toFixed(1)}</td>
+                    <td><Num n={w.km} fixed /></td>
                     <td style={{ fontFamily: 'var(--sans)', fontSize: 15 }}>{w.name}</td>
                     <td>{w.kind === 'life' ? <span className="tag ember">Base de vida</span> : w.kind === 'start' ? (i ? 'Meta' : 'Partida') : 'Abastecimento'}</td>
-                    <td className="muted">{i ? (w.km - WAYPOINTS[i - 1].km).toFixed(1) : '—'}</td>
+                    <td className="muted">{i ? <Num n={w.km - WAYPOINTS[i - 1].km} fixed /> : '—'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p className="mono muted mt-s">Pontos e distâncias provisórios. Sujeitos a ajuste.</p>
+            <p className="mono muted mt-s cm-plain">Pontos e distâncias provisórios. Sujeitos a ajuste.</p>
           </div>
         </section>
       )}

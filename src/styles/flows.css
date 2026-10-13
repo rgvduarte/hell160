@@ -188,3 +188,108 @@
 }
 
 .ha-edit { max-width: 640px; }
+
+/* ---------- escolha de casa na inscrição (estilo Airbnb) ---------- */
+.hp { display: flex; flex-direction: column; gap: 20px; }
+.hp-controls { display: flex; flex-wrap: wrap; gap: 20px 32px; align-items: flex-end; }
+.hp-nights { border: 0; padding: 0; margin: 0; }
+.hp-nights legend, .hp-label { font: 600 14px var(--sans); color: var(--ink-2); margin-bottom: 8px; display: block; padding: 0; }
+.hp .chip { min-height: 44px; padding: 10px 16px; border-radius: 999px; }
+.hp-stepper { display: inline-flex; align-items: center; gap: 4px; border: 1.5px solid var(--fg); border-radius: 999px; padding: 3px; }
+.hp-stepper button {
+  width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; color: var(--fg);
+  font: 600 20px/1 var(--sans); cursor: pointer;
+}
+.hp-stepper button:hover:not(:disabled) { background: color-mix(in srgb, var(--fg) 8%, transparent); }
+.hp-stepper button:disabled { opacity: 0.3; cursor: not-allowed; }
+.hp-stepper output { min-width: 28px; text-align: center; font: 600 17px var(--sans); font-variant-numeric: tabular-nums; }
+.hp-filters { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.hp-select select {
+  font: 500 15px var(--sans); min-height: 44px; padding: 8px 36px 8px 16px; border-radius: 999px;
+  border: 1.5px solid var(--fg); background: transparent; color: var(--fg); appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 20px) 50%, calc(100% - 15px) 50%; background-size: 5px 5px; background-repeat: no-repeat;
+}
+
+.hp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 760px) { .hp-grid { grid-template-columns: 1fr; } }
+
+.hp-card {
+  position: relative; display: flex; flex-direction: column; text-align: left; padding: 0; overflow: hidden;
+  border: 1.5px solid var(--line); border-radius: 20px; background: var(--bg); color: var(--fg); cursor: pointer;
+  font: inherit; transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.hp-card:hover:not(:disabled) { border-color: var(--fg); }
+.hp-card.on { border-color: var(--fg); box-shadow: 0 0 0 2px var(--fg); }
+.hp-card:disabled { cursor: not-allowed; }
+.hp-card.off:not(.on) .hp-wall, .hp-card.off:not(.on) .hp-body > :not(.hp-avail) { opacity: 0.45; }
+.hp-card:focus-visible { outline: 3px solid var(--ember); outline-offset: 2px; }
+
+.hp-none { padding: 20px; gap: 6px; justify-content: center; min-height: 120px; }
+.hp-none strong { font: 700 18px var(--sans); }
+.hp-none .muted { font-size: 14px; }
+
+.hp-wall { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 16px; aspect-ratio: 16 / 10; padding: 16px; }
+.hp-wall-cal { background: #ecebe7; color: var(--ink); }
+.hp-wall-ocre { background: #e7cf9f; color: var(--ink); }
+.hp-wall-terra { background: #c98a63; color: #1c120c; }
+.hp-wall-noite { background: #1c232e; color: #f2f4f3; }
+.hp-km { align-self: flex-start; font: 600 13px var(--sans); background: rgba(255, 255, 255, 0.9); color: var(--ink); padding: 6px 10px; border-radius: 999px; }
+.hp-wall-noite .hp-km { background: rgba(255, 255, 255, 0.92); }
+.hp-quote { font: 600 clamp(17px, 1.6vw, 20px) / 1.25 var(--display); letter-spacing: -0.01em; max-width: 26ch; }
+
+.hp-check {
+  position: absolute; top: 14px; right: 14px; width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid currentColor; background: rgba(255, 255, 255, 0.85);
+}
+.hp-none .hp-check { color: var(--fg); background: transparent; }
+.hp-card.on .hp-check { background: var(--fg); border-color: var(--fg); }
+.hp-card.on .hp-check::after {
+  content: ''; position: absolute; left: 8px; top: 4px; width: 7px; height: 12px;
+  border: solid var(--bg); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg);
+}
+
+.hp-body { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px 16px; }
+.hp-meta { font-size: 14px; color: var(--muted); }
+.hp-title { font: 700 18px/1.25 var(--sans); }
+.hp-host { font-size: 14px; color: var(--muted); }
+.hp-price { margin-top: 6px; font-size: 15px; font-variant-numeric: tabular-nums; }
+.hp-price b { font-size: 17px; }
+.hp-total { color: var(--muted); }
+.hp-avail { font: 600 13px var(--sans); color: var(--ok); }
+.hp-avail.bad { color: var(--ember-ink, #a82b14); }
+.hp-more { margin: 0; font-size: 15px; }
+.hp-summary { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+/* barra fixa no telemóvel com a casa escolhida */
+.hp-sticky { display: none; }
+@media (max-width: 860px) {
+  .hp-sticky {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    position: sticky; bottom: 0; z-index: 20; margin: 0 calc(-1 * var(--gutter));
+    padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom));
+    background: var(--bg); border-top: 1px solid var(--line); box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.06);
+    font-size: 15px;
+  }
+  .hp-sticky .btn { flex: none; }
+}
+.hp-link { text-decoration: none; }
+.hp-grid-3 { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.hp-wall-big { aspect-ratio: 16 / 9; border-radius: 20px; padding: clamp(16px, 3vw, 32px); }
+.hp-wall-big .hp-quote { font-size: clamp(22px, 2.6vw, 34px); max-width: 22ch; }
+
+/* filtros de Dormir na aldeia: botão no telemóvel, painel fixo no desktop */
+.stay-filters { display: flex; flex-direction: column; gap: 28px; }
+.stay-filters > summary { list-style: none; }
+.stay-filters > summary::-webkit-details-marker { display: none; }
+.stay-filters-toggle {
+  display: none; align-items: center; justify-content: center; min-height: 48px; padding: 10px 20px;
+  border: 1.5px solid var(--fg); border-radius: 999px; font: 600 15px var(--sans); cursor: pointer; width: max-content;
+}
+@media (min-width: 900px) {
+  .stay-filters-toggle { display: none !important; }
+}
+@media (max-width: 899px) {
+  .stay-filters-toggle { display: inline-flex; }
+  .stay-filters[open] { padding-bottom: 8px; }
+}

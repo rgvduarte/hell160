@@ -46,7 +46,8 @@ export function requestPayment(reg: Registration, method: PayMethod, extra: { ph
 export function markPaid(regId: string) {
   const { registrations } = getAll()
   const reg = registrations.find((r) => r.id === regId)
-  if (!reg || reg.status === 'paga') return
+  // só uma inscrição pendente pode passar a paga (nunca uma cancelada)
+  if (!reg || reg.status !== 'pendente') return
   update('registrations', regId, {
     status: 'paga',
     bib: reg.bib ?? nextBib(reg.race, registrations),
@@ -138,27 +139,29 @@ export function toCSV<T extends object>(rows: T[], columns?: (keyof T)[]) {
   return '﻿' + [cols.join(';'), ...rows.map((r) => cols.map((c) => cell(r[c])).join(';'))].join('\n')
 }
 
-// Evento de calendário da partida (hora de Lisboa). A bike ainda não tem data: devolve null.
+// Evento de calendário da partida, em UTC (julho em Lisboa = UTC+1). A bike ainda não tem data: devolve null.
 export function raceICS(raceId: string): string | null {
   const race = raceById(raceId) ?? RACES[0]
   if (race.id === 'bike') return null
-  const start = race.id === 'hell160' ? '20270702T220000' : '20270703T080000'
-  const hours = race.limitH
-  const end = new Date(Date.UTC(+start.slice(0, 4), +start.slice(4, 6) - 1, +start.slice(6, 8), +start.slice(9, 11) + hours, 0))
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const endStr = `${end.getUTCFullYear()}${pad(end.getUTCMonth() + 1)}${pad(end.getUTCDate())}T${pad(end.getUTCHours())}0000`
+  // hora local de Lisboa → UTC: 22:00 → 21:00Z (HELL160), 08:00 → 07:00Z (HELL100 e estafetas)
+  const startUtc = race.id === 'hell160' ? Date.UTC(2027, 6, 2, 21, 0) : Date.UTC(2027, 6, 3, 7, 0)
+  const endUtc = startUtc + race.limitH * 3600_000
+  const ics = (t: number) => new Date(t).toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z'
+  // pt-PT não agrupa números de 4 dígitos por omissão; aqui queremos '2 648'
+  const n = (v: number) => v.toLocaleString('pt-PT', { useGrouping: 'always' } as unknown as Intl.NumberFormatOptions)
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//HELL160//2027//PT',
+    'CALSCALE:GREGORIAN',
     'BEGIN:VEVENT',
     `UID:${race.id}-2027@hell160`,
-    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`,
-    `DTSTART;TZID=Europe/Lisbon:${start}`,
-    `DTEND;TZID=Europe/Lisbon:${endStr}`,
+    `DTSTAMP:${ics(Date.now())}`,
+    `DTSTART:${ics(startUtc)}`,
+    `DTEND:${ics(endUtc)}`,
     `SUMMARY:${race.name} · partida`,
     `LOCATION:${EVENT.base}\\, A-do-Pinto\\, Serpa`,
-    `DESCRIPTION:${race.distanceKm} km · ${race.gainM} m D+ · limite ${race.limitH} h. Datas 2027 a confirmar.`,
+    `DESCRIPTION:${n(race.distanceKm)} km · ${n(race.gainM)} m D+ · limite ${race.limitH} h. Datas 2027 a confirmar.`,
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n')

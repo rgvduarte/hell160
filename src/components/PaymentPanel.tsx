@@ -43,7 +43,9 @@ export function PaymentPanel({ reg, onPaid }: { reg: Registration; onPaid?: () =
     onPaid?.()
   }
 
-  const phoneOk = /^9\d{8}$/.test(phone.replace(/\s/g, ''))
+  // aceita '912 345 678', '+351 912 345 678' ou '00351912345678'
+  const phoneDigits = phone.replace(/\D/g, '').replace(/^(00)?351/, '')
+  const phoneOk = /^9\d{8}$/.test(phoneDigits)
   const cardOk = luhn(card.num) && /^(0[1-9]|1[0-2])\/\d{2}$/.test(card.exp) && /^\d{3,4}$/.test(card.cvc)
 
   return (
@@ -69,7 +71,7 @@ export function PaymentPanel({ reg, onPaid }: { reg: Registration; onPaid?: () =
                 <label htmlFor={`mbw-${reg.id}`}>Telemóvel MB WAY</label>
                 <input id={`mbw-${reg.id}`} inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="912 345 678" />
               </div>
-              <button className="btn" disabled={!phoneOk} onClick={() => { requestPayment(reg, 'mbway', { phone }); setLeft(240); setWaiting(true) }}>
+              <button className="btn" disabled={!phoneOk} onClick={() => { requestPayment(reg, 'mbway', { phone: phoneDigits }); setLeft(240); setWaiting(true) }}>
                 Enviar pedido · {eur(reg.priceEur)}
               </button>
             </>

@@ -11,10 +11,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const digits = (s: string) => s.replace(/\D/g, '')
 const phoneOk = (s: string) => /^\+?[\d\s().-]+$/.test(s.trim()) && digits(s).length >= 9 && digits(s).length <= 15
 const NOTE_MAX = 140
+const intIn = (v: string, min: number, max: number) => /^\d+$/.test(v.trim()) && +v >= min && +v <= max
 
 const EMPTY = {
   name: '', phone: '', email: '', village: 'A-do-Pinto', address: '', title: '', note: '',
-  sleeps: 4, bedrooms: 2, eurNight: 60, features: ['ac'] as string[], state: 'pronta',
+  sleeps: '4', bedrooms: '2', eurNight: 60, features: ['ac'] as string[], state: 'pronta',
 }
 
 export function Host() {
@@ -34,8 +35,8 @@ export function Host() {
   else if (!phoneOk(f.phone)) errors.phone = 'Número inválido: pelo menos 9 dígitos.'
   if (f.email.trim() && !EMAIL_RE.test(f.email.trim())) errors.email = 'Email inválido. Confirma se está bem escrito.'
   if (!f.address.trim()) errors.address = 'Falta a morada.'
-  if (!Number.isInteger(f.sleeps) || f.sleeps < 1 || f.sleeps > 12) errors.sleeps = 'Entre 1 e 12.'
-  if (!Number.isInteger(f.bedrooms) || f.bedrooms < 1 || f.bedrooms > 8) errors.bedrooms = 'Entre 1 e 8.'
+  if (!intIn(f.sleeps, 1, 12)) errors.sleeps = 'Entre 1 e 12.'
+  if (!intIn(f.bedrooms, 1, 8)) errors.bedrooms = 'Entre 1 e 8.'
   const show = (k: string) => (tried || touched.includes(k) ? errors[k] : undefined)
 
   function submit(e: FormEvent) {
@@ -52,8 +53,8 @@ export function Host() {
       phone: f.phone.trim(),
       village: f.village,
       address: f.address.trim(),
-      sleeps: f.sleeps,
-      bedrooms: f.bedrooms,
+      sleeps: Number(f.sleeps.trim()),
+      bedrooms: Number(f.bedrooms.trim()),
       eurNight: f.eurNight,
       features: f.features,
       state: f.state,
@@ -101,8 +102,9 @@ export function Host() {
             <li><div><h3 className="cond">Recebes o dinheiro</h3><p className="muted">{Math.round((1 - PLATFORM_FEE) * 100)} % do valor, transferido na semana seguinte à prova. Ajudamos com o registo de alojamento local.</p></div></li>
           </ol>
 
+          <p className="sr-only" role="status">{sent ? `Casa inscrita. Referência ${sent.id}.` : ''}</p>
           {sent ? (
-            <div className="summary stack" style={{ position: 'static', ['--s' as string]: '20px' }} aria-live="polite" ref={panel}>
+            <div className="summary stack" style={{ position: 'static', ['--s' as string]: '20px' }} ref={panel}>
               <p className="mono ember" style={{ margin: 0 }}>Recebido</p>
               <h3 className="cond">Obrigado, {sent.name.split(' ')[0]}.</h3>
               <p className="muted" style={{ marginBottom: 0 }}>
@@ -149,14 +151,14 @@ export function Host() {
               <div className="grid3">
                 <div className="field">
                   <label htmlFor="hs">Pessoas</label>
-                  <input id="hs" type="number" min={1} max={12} value={f.sleeps} onChange={(e) => set('sleeps', Math.round(+e.target.value))}
-                    aria-invalid={show('sleeps') ? true : undefined} aria-describedby={show('sleeps') ? 'hs-msg' : undefined} />
+                  <input id="hs" type="number" min={1} max={12} step={1} inputMode="numeric" value={f.sleeps} onChange={(e) => set('sleeps', e.target.value)}
+                    onBlur={touch('sleeps')} aria-invalid={show('sleeps') ? true : undefined} aria-describedby={show('sleeps') ? 'hs-msg' : undefined} />
                   {show('sleeps') && <span id="hs-msg" className="hint flow-err">{errors.sleeps}</span>}
                 </div>
                 <div className="field">
                   <label htmlFor="hb">Quartos</label>
-                  <input id="hb" type="number" min={1} max={8} value={f.bedrooms} onChange={(e) => set('bedrooms', Math.round(+e.target.value))}
-                    aria-invalid={show('bedrooms') ? true : undefined} aria-describedby={show('bedrooms') ? 'hb-msg' : undefined} />
+                  <input id="hb" type="number" min={1} max={8} step={1} inputMode="numeric" value={f.bedrooms} onChange={(e) => set('bedrooms', e.target.value)}
+                    onBlur={touch('bedrooms')} aria-invalid={show('bedrooms') ? true : undefined} aria-describedby={show('bedrooms') ? 'hb-msg' : undefined} />
                   {show('bedrooms') && <span id="hb-msg" className="hint flow-err">{errors.bedrooms}</span>}
                 </div>
                 <div className="field">

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { EVENT_NIGHTS, FEATURES, PLATFORM_FEE, VILLAGES, type FeatureKey } from '../data/listings'
 import { IMPACT } from '../data/event'
-import { HousePlate } from '../components/HousePlate'
+import { HouseCardContent, HouseWall } from '../components/HousePicker'
 import { allListings, eur, findListing, takenNights } from '../lib/domain'
 import { add, getAll, getSessionEmail, sameEmail, uid, useCollection, type Booking } from '../lib/store'
 import { Field } from './Register'
@@ -13,12 +13,19 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const digits = (s: string) => s.replace(/\D/g, '')
 const phoneOk = (s: string) => /^\+?[\d\s().-]+$/.test(s.trim()) && digits(s).length >= 9 && digits(s).length <= 15
 const nightLabel = (iso: string) => EVENT_NIGHTS.find((n) => n.iso === iso)?.label ?? iso
+// [etiqueta, título] do painel depois do pedido
+const STATUS_TEXT: Record<Booking['status'], [string, string]> = {
+  pedido: ['Pedido enviado', ''],
+  confirmado: ['Reserva confirmada', ''],
+  recusado: ['Pedido recusado', 'Procura outra casa'],
+  cancelado: ['Pedido cancelado', 'Cancelaste este pedido'],
+}
 
 // ---------- filtros guardados no URL (?aldeia=&pessoas=&max=&precisa=) ----------
 
 const DEFAULT_GUESTS = 2
 const DEFAULT_MAX = 80
-const DEFAULT_NEED: FeatureKey[] = ['ac']
+const DEFAULT_NEED: FeatureKey[] = []
 
 type Filters = { village: string; guests: number; max: number; need: FeatureKey[] }
 
@@ -56,6 +63,9 @@ export function Stay() {
   const setF = (patch: Partial<Filters>) => setParams(writeFilters({ ...f, ...patch }), { replace: true })
   const toggle = (k: FeatureKey) => setF({ need: f.need.includes(k) ? f.need.filter((x) => x !== k) : [...f.need, k] })
 
+  // no telemóvel os filtros começam fechados (botão "Filtros"); no desktop ficam sempre à vista
+  const [filtersOpen, setFiltersOpen] = useState(() => typeof window === 'undefined' || window.matchMedia('(min-width: 900px)').matches)
+  const activeFilters = (f.village ? 1 : 0) + (f.guests !== DEFAULT_GUESTS ? 1 : 0) + (f.max < 80 ? 1 : 0) + f.need.length
   const results = listings
     .filter(
       (l) =>
@@ -84,7 +94,10 @@ export function Stay() {
 
       <section className="sec tight rule">
         <div className="wrap stay-layout">
-          <aside className="filters" aria-label="Filtros">
+          <details className="filters stay-filters" open={filtersOpen} onToggle={(e) => setFiltersOpen((e.target as HTMLDetailsElement).open)}>
+            <summary className="stay-filters-toggle">
+              Filtros{activeFilters > 0 ? ` · ${activeFilters}` : ''}
+            </summary>
             <div className="field">
               <label htmlFor="v">Aldeia</label>
               <select id="v" value={f.village} onChange={(e) => setF({ village: e.target.value })}>
@@ -112,7 +125,7 @@ export function Stay() {
                 ))}
               </div>
             </div>
-          </aside>
+          </details>
           <div>
             <div className="row flow-count">
               <p className="mono muted" style={{ margin: 0 }} aria-live="polite">
@@ -125,34 +138,25 @@ export function Stay() {
             {results.length === 0 ? (
               <p className="notice mt">Nenhuma casa com estes filtros. Tira um ou dois.</p>
             ) : (
-              <div className="listings mt">
+              <div className="hp-grid hp-grid-3 mt">
                 {results.map((l) => {
                   const taken = takenNights(l.id, bookings)
                   const free = EVENT_NIGHTS.filter((n) => !taken.has(n.iso)).length
                   const to = f.guests !== DEFAULT_GUESTS ? `/alojamento/${l.id}?pessoas=${f.guests}` : `/alojamento/${l.id}`
                   return (
-                    <Link key={l.id} to={to} state={{ from: search }} className={`listing${free === 0 ? ' is-full' : ''}`}>
-                      <div className="plate"><HousePlate listing={l} /></div>
-                      <div className="row between mono">
-                        <span>{l.village}</span>
-                        <span>{l.kmToStart.toLocaleString('pt-PT')} km</span>
-                      </div>
-                      <h3>{l.title}</h3>
-                      <p className="muted" style={{ margin: 0, fontSize: 15 }}>{l.note}</p>
-                      <div className="row between mono">
-                        <span>{l.sleeps} pessoas · {l.bedrooms} qt</span>
-                        <strong>{eur(l.eurNight)}</strong>
-                      </div>
-                      <span className={`flow-free${free > 0 && free < EVENT_NIGHTS.length ? ' low' : ''}`}>
-                        {free === 0 ? 'Sem noites livres' : free === EVENT_NIGHTS.length ? 'Todas as noites livres' : `${free} de ${EVENT_NIGHTS.length} noites livres`}
-                      </span>
+                    <Link key={l.id} to={to} state={{ from: search }} className={`hp-card hp-link${free === 0 ? ' off' : ''}`}>
+                      <HouseCardContent
+                        l={l}
+                        status={free === 0 ? 'Sem noites livres' : free === EVENT_NIGHTS.length ? 'Todas as noites livres' : `${free} de ${EVENT_NIGHTS.length} noites livres`}
+                        bad={free === 0}
+                      />
                     </Link>
                   )
                 })}
               </div>
             )}
             <p className="mono muted mt-l">
-              Protótipo: casas de exemplo e casas aprovadas neste browser. Os pedidos de reserva são uma simulação e ficam guardados só aqui.
+              Casas de exemplo enquanto as primeiras famílias se inscrevem. Tens uma casa perto do percurso? Inscreve-a em Abrir a minha casa.
             </p>
           </div>
         </div>
@@ -259,7 +263,9 @@ export function StayDetail() {
     const nowTaken = takenNights(l.id, getAll().bookings)
     const lost = selected.filter((n) => nowTaken.has(n))
     if (lost.length) {
-      setRaceMsg(`${lost.map(nightLabel).join(' e ')} acabou de ficar reservada. Revê as noites.`)
+      setRaceMsg(
+        `${lost.map(nightLabel).join(' e ')} ${lost.length > 1 ? 'acabaram de ficar reservadas' : 'acabou de ficar reservada'}. Revê as noites.`,
+      )
       return
     }
     const b: Booking = {
@@ -289,9 +295,8 @@ export function StayDetail() {
         <p className="eyebrow"><Link to={back} style={{ textDecoration: 'none' }}>Alojamento</Link> / {l.village}</p>
         <div className="split flow-split wide">
           <div className="stack">
-            <div className="plate flow-plate"><HousePlate listing={l} /></div>
+            <HouseWall l={l} className="hp-wall-big" />
             <h1 className="display flow-house">{l.title}</h1>
-            <p className="lede">{l.note}</p>
             <dl className="kv" style={{ maxWidth: 480 }}>
               <dt>Anfitrião</dt><dd>{l.host}</dd>
               <dt>Aldeia</dt><dd>{l.village}</dd>
@@ -301,14 +306,17 @@ export function StayDetail() {
             <ul className="ticklist">{l.features.map((k) => <li key={k}>{FEATURES[k as FeatureKey] ?? k}</li>)}</ul>
           </div>
 
-          <aside className="summary" aria-live="polite" ref={aside}>
+          <aside className="summary" aria-label="Pedido de reserva" ref={aside}>
+            <p className="sr-only" role="status">{booking ? `${STATUS_TEXT[booking.status][0]}. Referência ${booking.id}.` : ''}</p>
             {booking ? (
               <div className="stack" style={{ ['--s' as string]: '20px' }}>
-                <p className="mono ember" style={{ margin: 0 }}>
-                  {booking.status === 'confirmado' ? 'Reserva confirmada' : booking.status === 'pedido' ? 'Pedido enviado' : 'Pedido recusado'}
-                </p>
+                <p className="mono ember" style={{ margin: 0 }}>{STATUS_TEXT[booking.status][0]}</p>
                 <h3 className="cond">
-                  {booking.status === 'pedido' ? `${l.host} responde em 48 h` : booking.status === 'confirmado' ? `${l.host} aceitou` : 'Procura outra casa'}
+                  {booking.status === 'pedido'
+                    ? `${l.host} responde em 48 h`
+                    : booking.status === 'confirmado'
+                      ? `${l.host} aceitou`
+                      : STATUS_TEXT[booking.status][1]}
                 </h3>
                 <p className="flow-ref">{booking.id}</p>
                 <dl className="kv">
@@ -317,7 +325,13 @@ export function StayDetail() {
                   <dt>Total</dt><dd>{eur(booking.totalEur)}</dd>
                 </dl>
                 <p className="muted" style={{ marginBottom: 0, fontSize: 15 }}>
-                  Guarda a referência. Só pagas depois de {l.host} aceitar o pedido.
+                  {booking.status === 'pedido'
+                    ? `Guarda a referência. Só pagas depois de ${l.host} aceitar o pedido.`
+                    : booking.status === 'confirmado'
+                      ? `Guarda a referência. ${l.host} espera-te nas noites marcadas.`
+                      : booking.status === 'recusado'
+                        ? 'Não pagas nada. Escolhe outra casa ou outras noites.'
+                        : 'Não pagas nada. As noites voltaram a ficar livres.'}
                 </p>
                 <div className="row">
                   <Link className="btn" to={`/conta?${new URLSearchParams({ email: booking.email, ref: booking.id })}`}>Acompanhar na área do atleta</Link>
@@ -384,8 +398,9 @@ export function StayDetail() {
                 <button className="btn">Pedir reserva</button>
                 {own.length > 0 && (
                   <p className="notice flow-block">
-                    Já tens {own.length === 1 ? 'um pedido' : `${own.length} pedidos`} nesta casa ({own.map((b) => b.id).join(', ')}).{' '}
-                    <Link to={`/conta?${new URLSearchParams({ email: own[0].email, ref: own[0].id })}`}>Ver na área do atleta</Link>.
+                    Já existe {own.length === 1 ? 'um pedido' : `${own.length} pedidos`} com este email nesta casa. Para{' '}
+                    {own.length === 1 ? 'o' : 'os'} ver,{' '}
+                    <Link to={`/conta?${new URLSearchParams({ email: email.trim() })}`}>entra na área do atleta</Link> com a referência que recebeste.
                   </p>
                 )}
               </form>

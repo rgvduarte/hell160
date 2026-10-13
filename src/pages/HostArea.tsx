@@ -232,7 +232,12 @@ function BookingList({ bookings }: { bookings: Booking[] }) {
   const [msg, setMsg] = useState<{ id: string; text: string; ok?: boolean } | null>(null)
 
   function accept(b: Booking) {
-    const others = getAll().bookings.filter((x) => x.id !== b.id)
+    const all = getAll().bookings
+    if (all.find((x) => x.id === b.id)?.status !== 'pedido') {
+      setMsg({ id: b.id, text: 'Este pedido já não está por responder.' })
+      return
+    }
+    const others = all.filter((x) => x.id !== b.id)
     const taken = takenNights(b.listingId, others)
     const clash = b.nights.filter((n) => taken.has(n))
     if (clash.length) {
@@ -242,8 +247,28 @@ function BookingList({ bookings }: { bookings: Booking[] }) {
       })
       return
     }
-    update('bookings', b.id, { status: 'confirmado', decidedAt: new Date().toISOString() })
-    setMsg({ id: b.id, text: `Reserva confirmada. ${b.name.split(' ')[0]} vê a confirmação na área do atleta.`, ok: true })
+    // aceitar um pedido recusa os pedidos pendentes que pedem alguma das mesmas noites
+    const overlap = others.filter(
+      (x) => x.listingId === b.listingId && x.status === 'pedido' && x.nights.some((n) => b.nights.includes(n)),
+    )
+    if (
+      overlap.length &&
+      !window.confirm(
+        `Aceitar o pedido ${b.id} de ${b.name}?\n\n${
+          overlap.length === 1
+            ? `O pedido de ${overlap[0].name} pede alguma das mesmas noites e fica recusado.`
+            : `${overlap.length} pedidos pedem alguma das mesmas noites e ficam recusados.`
+        }`,
+      )
+    )
+      return
+    const now = new Date().toISOString()
+    update('bookings', b.id, { status: 'confirmado', decidedAt: now })
+    overlap.forEach((x) => update('bookings', x.id, { status: 'recusado', decidedAt: now }))
+    const refused = overlap.length
+      ? ` ${overlap.length === 1 ? '1 pedido sobreposto foi recusado' : `${overlap.length} pedidos sobrepostos foram recusados`}.`
+      : ''
+    setMsg({ id: b.id, text: `Reserva confirmada. ${b.name.split(' ')[0]} vê a confirmação na área do atleta.${refused}`, ok: true })
   }
 
   function decline(b: Booking) {

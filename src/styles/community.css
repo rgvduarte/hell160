@@ -1,34 +1,40 @@
-/* Segurança, Parceiros, Live e Provas.
+/* Segurança (componentes DAE e formação), contacto de parceiros, Live e Provas.
    Reutiliza o sistema de global.css; aqui só o que estas páginas têm de próprio (prefixo cm-). */
 
 .cm-anchor { scroll-margin-top: 88px; }
 .cm-h2 { font-size: clamp(32px, 4vw, 52px); }
 .cm-fine { font-size: 14px; margin-bottom: 0; }
 .summary.cm-static { position: static; }
+/* global.css pinta ".night .ember" com a cor ember, o que apaga o texto de um .btn.ember em secções escuras */
+.cm-static .btn.ember, .cm-cta .btn.ember { color: var(--btn-fg); }
 .cm-done:focus { outline: none; }
 .cm-done .kv dd { overflow-wrap: anywhere; }
+.cm-plain, .mono.cm-plain, .stats b.cm-plain { font-variant-numeric: normal; }
+/* valores em euros com vírgula: sem algarismos tabulares, senão "1234 , 50 €" */
+.cm-done .kv dd, .cm-static .total b { font-variant-numeric: normal; }
+.cm-select { font-weight: 600; user-select: all; overflow-wrap: anywhere; } /* email da organização: visível e fácil de copiar */ /* separadores e texto: em Schibsted Grotesk os algarismos tabulares alargam . , : */
 .cm-ref { font: 600 clamp(20px, 2.4vw, 28px)/1.1 var(--sans); font-variant-numeric: tabular-nums; letter-spacing: 0; margin: 6px 0 0; overflow-wrap: anywhere; }
 .field textarea.cm-textarea { resize: vertical; min-height: 84px; font: 400 17px/1.4 var(--sans); }
 
 /* ---------- segurança: progresso dos compromissos ---------- */
 .cm-progress { margin-inline: 0; margin-bottom: 0; }
-.cm-progress .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.cm-progress .head b { font: 800 clamp(28px, 3.2vw, 44px)/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.cm-progress .cm-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.cm-progress .cm-head b { font: 800 clamp(28px, 3.2vw, 44px)/1 var(--display); letter-spacing: -0.02em; }
 .cm-cells { display: grid; grid-template-columns: repeat(var(--n, 8), 1fr); gap: 4px; margin-top: 14px; }
 .cm-cells span { position: relative; height: 18px; border: 1px solid var(--fg); overflow: hidden; }
 .cm-cells span i { position: absolute; inset: 0 auto 0 0; background: var(--ember); }
-.cm-progress .foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+.cm-progress .cm-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
 
 /* lista de locais com valor prometido */
 .cm-places li { display: flex; justify-content: space-between; align-items: center; gap: 8px 16px; flex-wrap: wrap; }
-.cm-places .amt { font: 500 14px var(--sans); font-variant-numeric: tabular-nums; color: var(--muted); }
+.cm-places .amt { font: 500 14px var(--sans); color: var(--muted); }
 .cm-places .right { display: flex; gap: 12px; align-items: center; margin-left: auto; }
 
 /* quem já apoiou */
 .cm-backers { list-style: none; padding: 0; margin: 0; border-top: 2px solid var(--fg); }
 .cm-backers li { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
 .cm-backers .who { font-weight: 600; overflow-wrap: anywhere; }
-.cm-backers .val { font: 600 15px var(--sans); text-align: right; font-variant-numeric: tabular-nums; }
+.cm-backers .val { font: 600 15px var(--sans); text-align: right; }
 .cm-backers .where { grid-column: 1 / -1; font: 500 14px var(--sans); color: var(--muted); }
 
 /* valor: chips com uma linha de nota */
@@ -36,8 +42,8 @@
 .cm-amounts .chip { text-align: left; }
 
 /* ---------- live ---------- */
-.cm-live .live-side { overflow: visible; max-height: none; position: sticky; top: 64px; align-self: start; }
-.cm-tools { padding: 16px 16px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 12px; }
+.cm-live .live-side { overflow: visible; max-height: calc(100svh - 64px); position: sticky; top: 64px; align-self: start; }
+.cm-tools { flex: none; padding: 16px 16px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 12px; }
 .cm-search { display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--fg); }
 .cm-search:focus-within { border-color: var(--ember); }
 .cm-search input { flex: 1; min-width: 0; font: 400 16px var(--sans); color: var(--fg); background: transparent; border: 0; padding: 10px 0; border-radius: 0; }
@@ -45,10 +51,10 @@
 .cm-search input::-webkit-search-cancel-button { display: none; }
 .cm-search button { font: 500 14px var(--sans); background: none; border: 0; color: var(--muted); cursor: pointer; padding: 8px 0 8px 8px; }
 .cm-search button:hover { color: var(--ember); }
-.cm-board { max-height: calc(100svh - 64px - 112px); overflow: auto; overscroll-behavior: contain; }
+.cm-board { flex: 1 1 auto; min-height: 0; max-height: none; overflow: auto; overscroll-behavior: contain; }
 .cm-board .board th { z-index: 2; }
 .cm-board .board tr:focus-visible { outline: 2px solid var(--ember); outline-offset: -2px; }
-.cm-board .board td.cm-name { font-family: var(--sans); }
+.cm-board .board td.cm-name { font-family: var(--sans); font-variant-numeric: normal; }
 .cm-board .board th.cm-fcol, .cm-board .board td.cm-fcol { width: 40px; padding-left: 0; padding-right: 8px; text-align: right; }
 .cm-board .empty td { cursor: default; color: var(--muted); font-family: var(--sans); padding: 20px 8px; }
 .cm-board .empty:hover td { background: none; }
@@ -72,10 +78,13 @@
 .cm-runner-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .cm-copy-field { width: 100%; font: 14px var(--sans); color: var(--fg); background: transparent; border: 1px solid var(--line); padding: 8px; }
 .cm-live-note { font-size: 14px; }
+.cm-live .kv dd, .cm-runner-head .mono { font-variant-numeric: normal; }
+/* rótulos junto à margem do SVG (Vila Verde de Ficalho no mapa, "160 km" no perfil) não são cortados */
+.cm-live .routemap, .cm-live .profile, .cm-svg-open .routemap, .cm-svg-open .profile { overflow: visible; }
 .cm-live .alert { flex-wrap: wrap; }
 
 @media (max-width: 1100px) {
-  .cm-live .live-side { position: static; }
+  .cm-live .live-side { position: static; max-height: none; }
   .cm-live .live-map { border-right: 0; }
   .cm-board { max-height: none; overflow: visible; }
   .cm-board .board th { top: 64px; z-index: 1; }
@@ -84,11 +93,12 @@
   .cm-board .board td:last-child, .cm-board .board th:last-child { padding-right: var(--gutter); }
 }
 @media (max-width: 560px) {
-  /* no telemóvel: só partida e bases de vida, com letra legível; os nomes das bases ficam à esquerda do marcador */
+  /* no telemóvel: só partida e bases de vida, com letra legível. Os nomes das bases ficam acima e à esquerda
+     do marcador: Vila Verde de Ficalho está junto à margem direita e, ao lado, tocaria no rótulo da partida. */
   .cm-live .routemap .wpt text { font-size: 30px; stroke-width: 8px; }
   .cm-live .routemap .wpt text .km { font-size: 0; }
   .cm-live .routemap .wpt.aid text { display: none; }
-  .cm-live .routemap .wpt.life text { text-anchor: end; transform: translateX(-24px); }
+  .cm-live .routemap .wpt.life text { text-anchor: end; transform: translate(-28px, -30px); }
   .cm-live .live-map { padding-left: var(--gutter); padding-right: var(--gutter); }
   .cm-live .kv { gap: 8px 12px; }
   .cm-live .kv dd { overflow-wrap: anywhere; }
