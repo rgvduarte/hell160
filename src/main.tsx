@@ -19,6 +19,9 @@ import { Territory } from './pages/Territory'
 import { Partners } from './pages/Partners'
 import { Brand } from './pages/Brand'
 import { NotFound } from './pages/NotFound'
+import { Account } from './pages/Account'
+import { Admin } from './pages/Admin'
+import { HostArea } from './pages/HostArea'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -37,6 +40,9 @@ createRoot(document.getElementById('root')!).render(
           <Route path="territorio" element={<Territory />} />
           <Route path="parceiros" element={<Partners />} />
           <Route path="marca" element={<Brand />} />
+          <Route path="conta" element={<Account />} />
+          <Route path="organizacao" element={<Admin />} />
+          <Route path="anfitriao/:ref" element={<HostArea />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

@@ -41,6 +41,9 @@ export function Layout() {
               </li>
             ))}
             <li>
+              <NavLink to="/conta">Área do atleta</NavLink>
+            </li>
+            <li>
               <Link to="/inscricao" className="btn small ember noarrow" style={{ marginLeft: 8 }}>
                 Inscrição 2027
               </Link>
@@ -96,6 +99,7 @@ function Footer() {
               <li><a href={EVENT.instagram} target="_blank" rel="noreferrer">Instagram</a></li>
               <li><Link to="/parceiros">Investidores e parceiros</Link></li>
               <li><Link to="/marca">Marca</Link></li>
+              <li><Link to="/organizacao">Organização</Link></li>
             </ul>
           </div>
         </div>
