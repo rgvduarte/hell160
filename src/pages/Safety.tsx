@@ -45,7 +45,6 @@ function initials(name: string) {
 }
 
 export function Safety() {
-  const pledges = useCollection('pledges')
   const { hash } = useLocation()
 
   // A navegação entre páginas volta ao topo; se o link trouxer #patrocinar ou #formacao, desce até lá.
@@ -54,14 +53,6 @@ export function Safety() {
     const t = window.setTimeout(() => document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' }), 60)
     return () => window.clearTimeout(t)
   }, [hash])
-
-  const total = pledges.reduce((s, p) => s + p.amountEur, 0)
-  const byPlace = useMemo(() => {
-    const m = new Map<string, number>()
-    for (const p of pledges) m.set(p.place, (m.get(p.place) ?? 0) + p.amountEur)
-    return m
-  }, [pledges])
-  const missing = PROPOSED.length
 
   return (
     <>
@@ -72,8 +63,8 @@ export function Safety() {
             <h1 className="display" style={{ fontSize: 'clamp(48px, 8vw, 120px)' }}>Ninguém fica sem sinal</h1>
           </div>
           <p className="lede">
-            Em 2026 falharam tracks e dispositivos, houve buscas de noite e uma atleta quase a desmaiar longe de tudo. Em 2027 a segurança
-            começa na inscrição.
+            Cada atleta é seguido por duas fontes de posição. Os desfibrilhadores que a prova traz ficam nas aldeias depois de os atletas
+            partirem.
           </p>
         </div>
       </section>
@@ -85,39 +76,12 @@ export function Safety() {
             <h2 className="cond cm-h2">Duas fontes, uma posição</h2>
           </div>
           <ol className="numlist">
-            <li><div><strong>App HELL160 obrigatória</strong><p className="muted">iOS e Android. Carrega o GPX oficial, guarda posição offline e envia ao minuto quando há rede.</p></div></li>
+            <li><div><strong>App HELL160 obrigatória</strong><p className="muted">iOS e Android. Carrega o GPX oficial, guarda a posição offline e envia-a ao minuto quando há rede.</p></div></li>
             <li><div><strong>Relógio emparelhado (recomendado)</strong><p className="muted">Segunda fonte de posição. A plataforma cruza as duas e usa a que for mais fiável naquele momento.</p></div></li>
             <li><div><strong>Localizador satélite para alugar</strong><p className="muted">Para zonas sem rede, como a descida ao Pulo do Lobo. 15 € na inscrição.</p></div></li>
             <li><div><strong>Alertas automáticos</strong><p className="muted">Paragem acima de 20 min fora de abastecimento, desvio de traçado ou perda das duas fontes. A central é avisada antes de alguém dar pela falta.</p></div></li>
-            <li><div><strong>Botão SOS</strong><p className="muted">Envia posição à equipa de resgate mais próxima e liga ao posto médico.</p></div></li>
+            <li><div><strong>Botão SOS</strong><p className="muted">Envia a posição à equipa de resgate mais próxima e liga ao posto médico.</p></div></li>
           </ol>
-        </div>
-      </section>
-
-      <section className="sec tight rule">
-        <div className="wrap split">
-          <div>
-            <p className="eyebrow">Fazer ou comprar</p>
-            <h2 className="cond cm-h2">Decisão em aberto</h2>
-            <p className="muted mt-s">Por decidir até janeiro de 2027, antes de abrir a app a testes no percurso.</p>
-          </div>
-          <table className="board">
-            <thead><tr><th /><th>App própria</th><th>Fornecedor (ex.: DotWatcher)</th></tr></thead>
-            <tbody>
-              {[
-                ['Custo inicial', 'Alto', 'Baixo'],
-                ['Custo por atleta', 'Baixo', 'Médio a alto'],
-                ['Prazo para julho 2027', 'Apertado', 'Seguro'],
-                ['Integração com inscrição e alojamento', 'Total', 'Parcial (API)'],
-                ['Replicável a outras provas', 'Sim, é o produto', 'Não'],
-                ['Hardware satélite', 'Alugado à parte', 'Incluído'],
-              ].map((r) => (
-                <tr key={r[0]} style={{ cursor: 'default' }}>
-                  <td className="muted">{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </section>
 
@@ -132,49 +96,16 @@ export function Safety() {
               </p>
               <div className="stats mt" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
                 <div><b>2</b><span>instalados</span></div>
-                <div><b className="ember">{missing}</b><span>em falta</span></div>
-                <div><b>{((missing * UNIT_EUR) / 1000).toFixed(1).replace('.', ',')}k</b><span>€ estimados</span></div>
+                <div><b className="ember">{PROPOSED.length}</b><span>em falta</span></div>
+                <div><b>{(GOAL_EUR / 1000).toFixed(1).replace('.', ',')}k</b><span>€ estimados</span></div>
               </div>
-              <Progress total={total} className="mt" />
+              <DaeProgress className="mt" />
               <div className="row mt">
                 <a className="btn ember" href="#patrocinar">Patrocinar um DAE</a>
                 <a className="btn ghost" href="#formacao">Quero formação</a>
               </div>
             </div>
-            <div>
-              <RouteMap labels={false}>
-                {AED.map((a) => {
-                  if (a.km == null) return null
-                  const [x, y] = pointAtKm(a.km)
-                  const covered = (byPlace.get(a.place) ?? 0) >= UNIT_EUR
-                  return (
-                    <g key={a.place} transform={`translate(${x} ${y})`}>
-                      <circle r={18} fill={covered ? 'var(--ember)' : 'var(--bg)'} stroke="var(--ember)" strokeWidth={3} strokeDasharray={covered ? undefined : '4 4'} />
-                      <path d="M-6,-2 L-1,-2 L-3,6 L6,-4 L1,-4 L3,-10 Z" fill={covered ? 'var(--bg)' : 'var(--ember)'} />
-                    </g>
-                  )
-                })}
-              </RouteMap>
-              <ul className="ticklist cm-places mt">
-                {AED.map((a) => {
-                  const pledged = byPlace.get(a.place) ?? 0
-                  return (
-                    <li key={a.place}>
-                      <span>{a.place}</span>
-                      <span className="right">
-                        {a.status === 'proposto' && pledged > 0 && (
-                          <span className="amt">{eur(pledged)} prometidos</span>
-                        )}
-                        <span className={a.status === 'instalado' ? 'tag ember' : pledged >= UNIT_EUR ? 'tag solid' : 'tag'}>
-                          {a.status === 'instalado' ? 'instalado' : pledged >= UNIT_EUR ? 'coberto' : 'proposto'}
-                        </span>
-                      </span>
-                    </li>
-                  )
-                })}
-              </ul>
-              <p className="mono muted mt-s">Localizações propostas · custo unitário estimado {eur(UNIT_EUR)} (DAE, armário, formação)</p>
-            </div>
+            <DaeNetwork />
           </div>
         </div>
       </section>
@@ -188,9 +119,9 @@ export function Safety() {
               {eur(UNIT_EUR)} pagam um desfibrilhador, o armário exterior e a formação de quem mora perto. Qualquer valor conta para o
               total. Empresas aparecem com o nome na lista de apoios; particulares só com as iniciais.
             </p>
-            <Backers pledges={pledges} />
+            <DaeBackers />
           </div>
-          <PledgeForm byPlace={byPlace} />
+          <DaePledgeForm />
         </div>
       </section>
 
@@ -214,13 +145,13 @@ export function Safety() {
       <section className="sec tight rule">
         <div className="wrap split">
           <div>
-            <p className="eyebrow">Lições de 2026</p>
-            <h2 className="cond cm-h2">O que muda</h2>
+            <p className="eyebrow">Em prova</p>
+            <h2 className="cond cm-h2">O que está previsto</h2>
           </div>
           <ul className="ticklist">
-            <li>GPX oficial único, validado no terreno e distribuído pela app, não por email.</li>
+            <li>GPX oficial único, validado no terreno e distribuído pela app.</li>
             <li>Teste de sinal obrigatório no levantamento do dorsal.</li>
-            <li>Abastecimentos reforçados com água entre bases de vida, protocolo de calor a partir dos 38 °C.</li>
+            <li>Abastecimentos com água entre bases de vida e protocolo de calor a partir dos 38 °C.</li>
             <li>Postos médicos nas três bases de vida, com a posição de todos os atletas em tempo real.</li>
             <li>Resgate noturno com coordenadas exatas, não com a última passagem.</li>
           </ul>
@@ -233,8 +164,60 @@ export function Safety() {
   )
 }
 
+// ---------- componentes reutilizáveis (cada um lê os compromissos da camada de dados) ----------
+
+function usePledgesByPlace() {
+  const pledges = useCollection('pledges')
+  const byPlace = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const p of pledges) m.set(p.place, (m.get(p.place) ?? 0) + p.amountEur)
+    return m
+  }, [pledges])
+  return { pledges, byPlace, total: pledges.reduce((s, p) => s + p.amountEur, 0) }
+}
+
+// Mapa e lista dos locais propostos, com o valor já prometido para cada um.
+export function DaeNetwork() {
+  const { byPlace } = usePledgesByPlace()
+  return (
+    <div>
+      <RouteMap labels={false}>
+        {AED.map((a) => {
+          if (a.km == null) return null
+          const [x, y] = pointAtKm(a.km)
+          const covered = (byPlace.get(a.place) ?? 0) >= UNIT_EUR
+          return (
+            <g key={a.place} transform={`translate(${x} ${y})`}>
+              <circle r={18} fill={covered ? 'var(--ember)' : 'var(--bg)'} stroke="var(--ember)" strokeWidth={3} strokeDasharray={covered ? undefined : '4 4'} />
+              <path d="M-6,-2 L-1,-2 L-3,6 L6,-4 L1,-4 L3,-10 Z" fill={covered ? 'var(--bg)' : 'var(--ember)'} />
+            </g>
+          )
+        })}
+      </RouteMap>
+      <ul className="ticklist cm-places mt">
+        {AED.map((a) => {
+          const pledged = byPlace.get(a.place) ?? 0
+          return (
+            <li key={a.place}>
+              <span>{a.place}</span>
+              <span className="right">
+                {a.status === 'proposto' && pledged > 0 && <span className="amt">{eur(pledged)} prometidos</span>}
+                <span className={a.status === 'instalado' ? 'tag ember' : pledged >= UNIT_EUR ? 'tag solid' : 'tag'}>
+                  {a.status === 'instalado' ? 'instalado' : pledged >= UNIT_EUR ? 'coberto' : 'proposto'}
+                </span>
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="mono muted mt-s">Localizações propostas · custo unitário estimado {eur(UNIT_EUR)} (DAE, armário, formação)</p>
+    </div>
+  )
+}
+
 // Barra dividida em células: cada célula é um DAE ({UNIT_EUR} €).
-function Progress({ total, className = '' }: { total: number; className?: string }) {
+export function DaeProgress({ className = '' }: { className?: string }) {
+  const { total } = usePledgesByPlace()
   const pct = Math.min(100, Math.round((total / GOAL_EUR) * 100))
   const units = total / UNIT_EUR
   return (
@@ -267,7 +250,8 @@ function Progress({ total, className = '' }: { total: number; className?: string
   )
 }
 
-function Backers({ pledges }: { pledges: Pledge[] }) {
+export function DaeBackers() {
+  const { pledges } = usePledgesByPlace()
   const list = useMemo(
     () =>
       [...pledges].sort(
@@ -305,7 +289,8 @@ function Backers({ pledges }: { pledges: Pledge[] }) {
 
 type Amount = (typeof AMOUNTS)[number] | 'outro'
 
-function PledgeForm({ byPlace }: { byPlace: Map<string, number> }) {
+export function DaePledgeForm() {
+  const { byPlace } = usePledgesByPlace()
   const [kind, setKind] = useState<Pledge['kind']>('empresa')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -322,7 +307,7 @@ function PledgeForm({ byPlace }: { byPlace: Map<string, number> }) {
 
   const value = amount === 'outro' ? Math.round(Number(other.replace(',', '.')) || 0) : amount
   const errors = {
-    name: !name.trim() ? (kind === 'empresa' ? 'Indique o nome da empresa.' : 'Indique o seu nome.') : '',
+    name: !name.trim() ? (kind === 'empresa' ? 'Indica o nome da empresa.' : 'Indica o teu nome.') : '',
     email: !EMAIL_RE.test(email.trim()) ? 'Email inválido.' : '',
     amount: value < MIN_EUR ? `Valor mínimo ${MIN_EUR} €.` : '',
   }
@@ -382,7 +367,7 @@ function PledgeForm({ byPlace }: { byPlace: Map<string, number> }) {
           Nada é cobrado agora. A organização responde para <strong>{done.email}</strong> com os dados para pagamento e recibo.
         </p>
         <p className="notice cm-fine">
-          Este site ainda não tem servidor: o compromisso fica guardado neste browser. Para chegar já à organização, envie também por email.
+          Este site ainda não tem servidor: o compromisso fica guardado neste browser. Para chegar já à organização, envia também por email.
         </p>
         <div className="row">
           <a className="btn small ghost noarrow" href={mailto(`Patrocínio DAE · ${done.id}`, body)}>Enviar também por email</a>
@@ -468,13 +453,13 @@ function PledgeForm({ byPlace }: { byPlace: Map<string, number> }) {
       <p className="muted cm-fine">Nada é cobrado agora. A organização confirma por email e envia os dados para pagamento e recibo.</p>
       <button className="btn ember">Registar compromisso</button>
       <p className="muted cm-fine">
-        Prefere tratar por email? <a href={mailto('Patrocínio de desfibrilhadores HELL160', '')}>{EVENT.email}</a>
+        Preferes tratar por email? <a href={mailto('Patrocínio de desfibrilhadores HELL160', '')}>{EVENT.email}</a>
       </p>
     </form>
   )
 }
 
-function TrainingForm() {
+export function TrainingForm() {
   const [f, setF] = useState({ name: '', phone: '', email: '', village: VILLAGES[0] as string, note: '' })
   const set = (k: keyof typeof f) => (v: string) => setF((x) => ({ ...x, [k]: v }))
   const [tried, setTried] = useState(false)
@@ -486,7 +471,7 @@ function TrainingForm() {
   }, [done])
 
   const errors = {
-    name: !f.name.trim() ? 'Indique o seu nome.' : '',
+    name: !f.name.trim() ? 'Indica o teu nome.' : '',
     phone: digits(f.phone).length < 9 ? 'Telefone com pelo menos 9 dígitos.' : '',
     email: f.email.trim() && !EMAIL_RE.test(f.email.trim()) ? 'Email inválido.' : '',
   }
@@ -538,10 +523,10 @@ function TrainingForm() {
           <p className="cm-ref">{done.id}</p>
         </div>
         <p className="cm-fine">
-          Juntamos o seu pedido aos de {done.village} e ligamos para <strong>{done.phone}</strong> quando houver data para a sessão.
+          Juntamos o teu pedido aos de {done.village} e ligamos para <strong>{done.phone}</strong> quando houver data para a sessão.
         </p>
         <p className="notice cm-fine">
-          Este site ainda não tem servidor: o pedido fica guardado neste browser. Para chegar já à organização, envie também por email.
+          Este site ainda não tem servidor: o pedido fica guardado neste browser. Para chegar já à organização, envia também por email.
         </p>
         <div className="row">
           <a className="btn small ghost noarrow" href={mailto(`Formação SBV/DAE · ${done.village} · ${done.id}`, body)}>Enviar também por email</a>
@@ -580,7 +565,7 @@ function TrainingForm() {
       </div>
       <button className="btn">Pedir formação</button>
       <p className="muted cm-fine">
-        Também pode escrever para <a href={mailto('Formação em primeiros socorros', '')}>{EVENT.email}</a>
+        Também podes escrever para <a href={mailto('Formação em primeiros socorros', '')}>{EVENT.email}</a>
       </p>
     </form>
   )

@@ -28,7 +28,7 @@ export function Partners() {
   }, [sent])
 
   const errors = {
-    name: !f.name.trim() ? 'Indique o seu nome.' : '',
+    name: !f.name.trim() ? 'Indica o teu nome.' : '',
     email: !EMAIL_RE.test(f.email.trim()) ? 'Email inválido.' : '',
   }
   const invalid = Object.values(errors).some(Boolean)
@@ -150,7 +150,7 @@ export function Partners() {
               </dl>
               <p className="cm-fine">O dossier segue para {sent.email}. O convite para a apresentação chega quando a data estiver fechada.</p>
               <p className="notice cm-fine">
-                Este site ainda não tem servidor: o pedido fica guardado neste browser. Para chegar já à organização, envie também por email.
+                Este site ainda não tem servidor: o pedido fica guardado neste browser. Para chegar já à organização, envia também por email.
               </p>
               <div className="row">
                 <a className="btn small ghost noarrow" href={mail}>Enviar também por email</a>

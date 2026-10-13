@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom'
-import { RouteMap } from '../components/RouteMap'
+import { TrailMap } from '../components/TrailMap'
+import { mapRoute } from '../data/routes'
 import { Contours } from '../components/Graphics'
 
 const PLACES = [
   ['A-do-Pinto', 'Partida e meta. A aldeia que organiza e que abre as portas.'],
-  ['Vila Verde de Ficalho', 'Junto à fronteira com Espanha. Primeira base de vida.'],
-  ['Serpa', 'Muralhas, queijo, cante. Segunda base de vida, a meio da prova.'],
-  ['Pulo do Lobo', 'O Guadiana a apertar-se entre rochas. O troço mais técnico — e o mais bonito.'],
-  ['Brinches · Santa Iria', 'A última noite. Terceira base de vida e o regresso pelo montado.'],
+  ['Serpa', 'Muralhas, queijo e cante alentejano. A vila do concelho.'],
+  ['Pulo do Lobo', 'O Guadiana aperta-se entre rochas e cai numa garganta funda.'],
+  ['Montado', 'Azinheiras e sobreiros a perder de vista, estradões de terra e pouca sombra.'],
+  ['As aldeias', 'Casas caiadas com barras azuis e amarelas, gente à porta a ver passar quem corre.'],
 ] as const
 
 export function Territory() {
@@ -34,8 +35,8 @@ export function Territory() {
             ))}
           </ol>
           <div>
-            <RouteMap />
-            <p className="mono muted mt-s">Mapa esquemático · GR15 e GR15.2 · bases de vida provisórias</p>
+            <TrailMap routes={[mapRoute('hell160')!]} height={560} label="Mapa do território e do percurso do HELL160" />
+            <p className="mono muted mt-s">GR15 e GR15.2 · margem esquerda do Guadiana</p>
           </div>
         </div>
       </section>

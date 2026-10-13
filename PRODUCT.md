@@ -10,14 +10,15 @@ The 2027 webapp of **HELL160 — Shadows and Dust**, an ultra-endurance event in
 - **HELL100 and relays:** solo, pairs and teams of four.
 - **HELL100 Bike:** moving to February (2027 date to be announced), with a possible cross-border course with Spain.
 
-## Why the platform exists
+## Why it exists
 
-These come from the meeting of 13 Oct 2026.
+HELL160 is organised to bring health and safety resources to the villages on the left bank of the Guadiana, which are far from hospitals.
 
-1. **Accommodation.** The area has no hotel capacity. There are about 10,000 houses, about 5,000 of them closed. In 2023 the event brought 3,000–4,000 people and some slept in the school. The answer is a local, Airbnb-like booking platform: families open houses for the race weekend at 50–80 € per night, and the money stays with them.
-2. **Safety.** In 2026, tracks and devices failed, there were night searches and an athlete nearly fainted. Tracking must be redundant (phone + watch, optional satellite rental) and visible in real time to the organisation, the rescue teams and families.
-3. **Community safety network.** Defibrillators in the villages. Two have been obtained so far.
-4. **Investment and replication.** The first edition generated more than 500,000 € in regional impact. The platform should become a case that other municipalities can replicate. Investors and institutions are introduced at a December event.
+1. **The cause.** The event funds a network of defibrillators in the villages along the course, together with basic life-support training for residents and volunteers. Two devices have been secured so far. This is the public reason for the event and should lead the story.
+2. **Accommodation in the villages.** The area has no hotels. Village families open their houses to athletes and their families at 50–80 € per night, and the money stays with the hosts.
+3. **Safety on course.** Every athlete is tracked in real time: the HELL160 app is mandatory, a GPS watch acts as a second source, and a satellite tracker can be rented. There are medical posts at the life bases and rescue teams along the course.
+
+Internal matters (past incidents, technical make-or-buy decisions, investors and institutional partners) belong in the partners' briefing. They never go on the public site or in this public repository.
 
 ## Audiences
 
@@ -25,11 +26,11 @@ These come from the meeting of 13 Oct 2026.
 - **Families and supporters:** they book houses and follow the live tracking, often at night and outdoors.
 - **Hosts:** village residents, often older and not very digital. They register a house, accept requests and get paid.
 - **Organisation and rescue:** they validate, confirm, export and watch alerts. Accuracy matters more than expression for them.
-- **Partners and investors:** they need evidence and a clear ask.
+- **Sponsors:** they need a clear way to support the cause.
 
 ## Surfaces and visitor mode
 
-- **Persuade:** home, races, territory, partners.
+- **Persuade:** home, the cause, races, territory, support.
 - **Operate:** registration, accommodation booking, host area, athlete area, back-office, live tracking.
 
 ## Constraints

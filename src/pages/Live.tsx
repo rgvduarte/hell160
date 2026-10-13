@@ -181,7 +181,7 @@ export function Live() {
   const [copied, setCopied] = useState<'ok' | 'fail' | null>(null)
   const boardRef = useRef<HTMLDivElement>(null)
 
-  // O dorsal selecionado vive no URL (?dorsal=123): o link pode ser partilhado e o botão "voltar" funciona.
+  // O dorsal selecionado vive no URL (?dorsal=123), para o link poder ser partilhado. Trocar de atleta substitui a entrada do histórico.
   const [params, setParams] = useSearchParams()
   const param = params.get('dorsal')
   const paramBib = param != null && /^\s*#?\d+\s*$/.test(param) ? Number(param.replace(/\D/g, '')) : NaN
@@ -228,17 +228,20 @@ export function Live() {
     out: rows.filter((r) => r.s.st === 'out').length,
   }
 
-  // linha selecionada sempre visível dentro da tabela (só quando a tabela tem scroll próprio)
+  // Linha escolhida (pesquisa, link, mapa) sempre visível dentro da tabela, quando a tabela tem scroll próprio.
+  // Sem ?dorsal= no URL a tabela abre no topo, com a liderança à vista.
   useEffect(() => {
     const box = boardRef.current
-    if (!box || sel == null || box.scrollHeight <= box.clientHeight + 1) return
+    if (!box || sel == null || param == null || box.scrollHeight <= box.clientHeight + 1) return
     const row = box.querySelector<HTMLElement>(`tr[data-bib="${sel}"]`)
     if (!row) return
     const head = box.querySelector('thead')?.getBoundingClientRect().height ?? 0
     const b = box.getBoundingClientRect()
     const r = row.getBoundingClientRect()
-    if (r.top < b.top + head) box.scrollTop -= b.top + head - r.top
-    else if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom
+    if (r.top < b.top + head || r.bottom > b.bottom) {
+      box.scrollTop += r.top - b.top - head - (b.height - head - r.height) / 2
+    }
+    // corre só quando muda o atleta, não a cada atualização do relógio
   }, [sel])
 
   function search(v: string) {
@@ -378,7 +381,7 @@ export function Live() {
               </div>
               {copied === 'fail' && (
                 <div className="mt-s">
-                  <label className="mono muted" htmlFor="live-share">Copie o link à mão</label>
+                  <label className="mono muted" htmlFor="live-share">Copia o link à mão</label>
                   <input id="live-share" className="cm-copy-field mt-s" readOnly value={shareUrl} onFocus={(e) => e.currentTarget.select()} autoFocus />
                 </div>
               )}
@@ -478,7 +481,7 @@ export function Live() {
                   <tr className="empty">
                     <td colSpan={6}>
                       {onlyFollowed && follow.length === 0
-                        ? 'Ainda não segue ninguém. Carregue no + ao lado de um atleta para o acompanhar aqui.'
+                        ? 'Ainda não segues ninguém. Carrega no + ao lado de um atleta para o acompanhares aqui.'
                         : `Nenhum atleta corresponde a «${query.trim()}».`}
                     </td>
                   </tr>

@@ -75,15 +75,15 @@ export function Races() {
           <p className="eyebrow">Provas 2027</p>
           <h1 className="display" style={{ fontSize: 'clamp(56px, 11vw, 168px)' }}>Provas</h1>
           <p className="lede mt">
-            Três formatos a pé no primeiro fim de semana de julho, e a bicicleta em fevereiro — longe do calor, e com o traçado a tentar
-            atravessar a fronteira.
+            Três formatos a pé no primeiro fim de semana de julho. A bicicleta passa para fevereiro, longe do calor, com o traçado a
+            tentar atravessar a fronteira.
           </p>
           <div className="mt-l">
             <RaceTable />
           </div>
           <p className="notice mt">
             Datas, preços e lotação de 2027 são provisórios e baseiam-se no regulamento de 2026. Os preços das estafetas são por equipa.
-            As vagas restantes contam as inscrições feitas neste protótipo.
+            Vagas restantes em simulação: contam só as inscrições feitas neste browser.
           </p>
         </div>
       </section>
@@ -158,7 +158,7 @@ export function RaceDetail() {
               </div>
               {sp.sold && (
                 <p className="muted cm-fine">
-                  A lista de espera funciona por email: {EVENT.email}. Indique a prova, o nome e um telefone.
+                  A lista de espera funciona por email: {EVENT.email}. Indica a prova, o nome e um telefone.
                 </p>
               )}
             </div>

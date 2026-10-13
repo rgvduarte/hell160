@@ -69,13 +69,11 @@ export function Stay() {
   return (
     <>
       <section className="sec tight">
-        <div className="wrap split" style={{ alignItems: 'end' }}>
-          <div>
-            <p className="eyebrow">Alojamento comunitário · 1 – 4 julho 2027</p>
-            <h1 className="display" style={{ fontSize: 'clamp(52px, 9vw, 140px)' }}>Dorme na aldeia</h1>
-          </div>
-          <div className="stack" style={{ ['--s' as string]: '16px' }}>
-            <p className="lede">
+        <div className="wrap">
+          <p className="eyebrow">Alojamento comunitário · 1 – 4 julho 2027</p>
+          <h1 className="display flow-hero">Dorme na aldeia</h1>
+          <div className="flow-hero-foot">
+            <p className="lede" style={{ margin: 0 }}>
               Casas de famílias do concelho de Serpa, abertas para o fim de semana da prova. {IMPACT.nightly} por noite. O anfitrião recebe
               {' '}{Math.round((1 - PLATFORM_FEE) * 100)} % do valor; o resto paga a plataforma e o seguro.
             </p>
@@ -173,11 +171,13 @@ function initialContact(params: URLSearchParams): Contact {
   if (q.name || q.email || q.phone) return { ...q, from: 'link' }
   const session = getSessionEmail()
   if (!session) return { ...q, from: null }
-  const mine = getAll().registrations.filter((r) => sameEmail(r.email, session))
+  const { registrations, bookings } = getAll()
+  const mine = registrations.filter((r) => sameEmail(r.email, session))
   const reg = [...mine].reverse().find((r) => r.status !== 'cancelada') ?? mine[mine.length - 1]
-  return reg
-    ? { name: `${reg.first} ${reg.last}`, email: reg.email, phone: reg.phone, from: 'session' }
-    : { name: '', email: session, phone: '', from: 'session' }
+  if (reg) return { name: `${reg.first} ${reg.last}`, email: reg.email, phone: reg.phone, from: 'session' }
+  // sem inscrição: usa a última reserva feita com este email
+  const book = [...bookings].reverse().find((b) => sameEmail(b.email, session))
+  return { name: book?.name ?? '', email: book?.email ?? session, phone: book?.phone ?? '', from: 'session' }
 }
 
 export function StayDetail() {

@@ -63,7 +63,7 @@ function HostDashboard({ app }: { app: HostApplication }) {
     { t: 'Inscrição recebida', d: fmtDate(app.createdAt), s: 'done' },
     {
       t: 'Visita da organização',
-      d: app.status === 'pendente' ? `A organização vai ligar para ${app.phone} para marcar a visita.` : 'Feita.',
+      d: app.status === 'pendente' ? `A organização vai ligar para ${app.phone} para marcar a visita.` : approved ? 'Feita.' : 'Concluída.',
       s: app.status === 'pendente' ? 'now' : 'done',
     },
     refused
