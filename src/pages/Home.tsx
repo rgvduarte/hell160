@@ -70,24 +70,33 @@ export function Home() {
         </div>
       </section>
 
+      <section className="sec night cause-home">
+        <div className="wrap split" style={{ alignItems: 'end' }}>
+          <h2 className="display">Corremos pelas aldeias</h2>
+          <div className="stack">
+            <p className="lede">
+              O HELL160 é organizado para levar desfibrilhadores e socorro às aldeias da margem esquerda do Guadiana, longe dos
+              hospitais. Dois aparelhos já estão conseguidos. O objetivo é haver um em cada aldeia do percurso.
+            </p>
+            <div className="row">
+              <Link className="btn ember" to="/causa">Conhecer a causa</Link>
+              <Link className="btn ghost" to="/apoiar">Apoiar</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="sec">
         <div className="wrap split">
-          <div>
-            <p className="eyebrow">A prova</p>
-            <h2 className="display">Pó de dia. Sombra de noite.</h2>
-          </div>
+          <h2 className="display">Pó de dia, sombra de noite</h2>
           <div className="prose stack">
             <p className="lede" style={{ maxWidth: '40ch' }}>
-              O HELL160 não tem montanhas. Tem distância, calor e escuro — e a planície a mostrar quanto falta.
+              Não há montanhas no HELL160. Há distância, calor e noite, numa planície que mostra sempre quanto falta.
             </p>
             <p>
-              Circular pela GR15 e GR15.2, a partir do pavilhão de A-do-Pinto: estradões, montado, a descida ao Pulo do Lobo e as aldeias
-              que ficam acordadas para ver passar quem ainda corre. Navegação por GPS, material obrigatório controlado à partida e no
-              percurso, e uma regra simples: o que precisas, levas.
-            </p>
-            <p>
-              Em 2027 a prova ganha uma plataforma própria — inscrição, alojamento em casas da aldeia, e tracking em direto para a
-              organização, para as equipas de resgate e para quem fica em casa a ver.
+              Circular pela GR15 e GR15.2 a partir do pavilhão de A-do-Pinto: estradões, montado, a descida ao Pulo do Lobo e as
+              aldeias que ficam acordadas para ver passar quem ainda corre. Em autonomia total, com navegação por GPS e material
+              obrigatório verificado à partida e em prova.
             </p>
           </div>
         </div>
@@ -98,10 +107,7 @@ export function Home() {
       <section className="sec tight rule">
         <div className="wrap">
           <div className="row between" style={{ marginBottom: 32, alignItems: 'end' }}>
-            <div>
-              <p className="eyebrow">Provas 2027</p>
-              <h2 className="display">Escolhe a distância</h2>
-            </div>
+            <h2 className="display">Provas 2027</h2>
             <Link className="btn ghost" to="/provas">Todas as provas</Link>
           </div>
           <RaceTable />
@@ -111,18 +117,13 @@ export function Home() {
       <section className="sec">
         <div className="wrap">
           <div className="split">
-            <div>
-              <p className="eyebrow">Alojamento comunitário</p>
-              <h2 className="display">Dorme na aldeia</h2>
-            </div>
+            <h2 className="display">Dorme na aldeia</h2>
             <div className="stack">
               <p className="lede">
-                Não há hotéis aqui. Há {IMPACT.closedHouses} casas fechadas no concelho e famílias que as querem abrir no fim de semana da
-                prova.
+                Aqui não há hotéis: há casas de família. No fim de semana da prova, gente das aldeias abre a porta a atletas e famílias.
               </p>
               <p>
-                Em 2023 vieram entre {IMPACT.visitors2023} pessoas e houve quem dormisse na escola. Em 2027, atletas e famílias reservam
-                casas de gente da terra, a {IMPACT.nightly} por noite. O dinheiro vai para quem abre a porta.
+                Casas a {IMPACT.nightly} por noite, reservadas aqui. O valor fica com quem recebe.
               </p>
               <div className="row">
                 <Link className="btn" to="/alojamento">Ver casas</Link>
@@ -156,52 +157,14 @@ export function Home() {
         </div>
       </div>
 
-      <section className="sec">
-        <div className="wrap split">
-          <div>
-            <p className="eyebrow">Segurança</p>
-            <h2 className="display">Ninguém fica sem sinal</h2>
-          </div>
-          <ol className="numlist">
-            <li>
-              <div>
-                <h3 className="cond">Tracking redundante</h3>
-                <p className="muted">Telemóvel + relógio, posição ao minuto, alertas automáticos por paragem anormal ou desvio do traçado.</p>
-              </div>
-            </li>
-            <li>
-              <div>
-                <h3 className="cond">Rede de desfibrilhadores</h3>
-                <p className="muted">DAE nas aldeias do percurso, que ficam para a comunidade depois da prova. Já há dois. Faltam os outros.</p>
-              </div>
-            </li>
-            <li>
-              <div>
-                <h3 className="cond">Equipas no terreno</h3>
-                <p className="muted">Postos médicos nas bases de vida, resgate móvel com a localização de cada atleta em tempo real.</p>
-              </div>
-            </li>
-            <li>
-              <div className="row">
-                <Link className="btn ghost" to="/seguranca">Plano de segurança</Link>
-              </div>
-            </li>
-          </ol>
-        </div>
-      </section>
-
       <section className="sec dust">
-        <div className="wrap split">
-          <div>
-            <p className="eyebrow">Parceiros e investidores</p>
-            <h2 className="display">Um caso para replicar</h2>
-          </div>
+        <div className="wrap split" style={{ alignItems: 'end' }}>
+          <h2 className="display">Apoiar a prova</h2>
           <div className="stack">
             <p className="lede">
-              A primeira edição deixou mais de meio milhão de euros na região. A plataforma é feita para que outras autarquias façam o
-              mesmo.
+              Empresas e instituições podem patrocinar um desfibrilhador, os abastecimentos ou o alojamento nas aldeias.
             </p>
-            <Link className="btn" to="/parceiros">Dossier para parceiros</Link>
+            <Link className="btn" to="/apoiar">Como apoiar</Link>
           </div>
         </div>
       </section>

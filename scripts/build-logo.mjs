@@ -1,7 +1,7 @@
-// Exporta os ficheiros de marca para public/brand a partir de src/components/logoPaths.ts.
-// Uso: npm run logo
+// Exporta os ficheiros de marca "O Dorsal" para public/brand e o favicon, a partir de src/components/logoPaths.ts.
+// Uso: npm run logo   (os PNG — ícone iOS e avatar — são gerados por scripts/build-icons.cjs com o Playwright)
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { layout, MARK } from '../src/components/logoPaths.ts'
+import { DORSAL, DORSAL_SMALL, LOCKUP } from '../src/components/logoPaths.ts'
 
 const INK = '#15120F'
 const CHALK = '#EFE9DF'
@@ -9,30 +9,21 @@ const EMBER = '#C8361B'
 const out = new URL('../public/brand/', import.meta.url)
 mkdirSync(out, { recursive: true })
 
-const word = layout('HELL160')
-const glyphs = (fg) =>
-  word.glyphs
-    .map((g, i) => `<path transform="translate(${g.x} 0)" fill="${i >= 4 ? EMBER : fg}" fill-rule="evenodd" d="${g.d}"/>`)
-    .join('')
-const mark = (fg) =>
-  `<path fill="${EMBER}" d="${MARK.left}"/><path fill="${fg}" d="${MARK.right}"/><path fill="${fg}" d="${MARK.river}"/>`
-const svg = (w, h, body, bg) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w * 4}" height="${h * 4}">${bg ? `<rect width="${w}" height="${h}" fill="${bg}"/>` : ''}${body}</svg>\n`
+const svg = (vb, w, h, body) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" width="${w}" height="${h}">${body}</svg>\n`
 
-// lockup: símbolo 64 + espaço 26 + wordmark escalado para 40 de altura, centrado
-const s = 40 / 60
-const lockW = 64 + 26 + word.width * s
-const lock = (fg) => `${mark(fg)}<g transform="translate(90 12) scale(${s})">${glyphs(fg)}</g>`
+const dorsal = `<path fill="${EMBER}" d="${DORSAL.field}"/><path fill="${INK}" d="${DORSAL.band}"/><path fill="${CHALK}" fill-rule="evenodd" d="${DORSAL.hell}"/><path fill="${CHALK}" fill-rule="evenodd" d="${DORSAL.n160}"/>`
+const small = `<path fill="${EMBER}" d="${DORSAL_SMALL.field}"/><path fill="${CHALK}" fill-rule="evenodd" d="${DORSAL_SMALL.n160}"/>`
+const lockup = (hell) => `<path fill="${hell}" fill-rule="evenodd" d="${LOCKUP.hell}"/><path fill="${EMBER}" d="${LOCKUP.box}"/><path fill="${CHALK}" fill-rule="evenodd" d="${LOCKUP.n160}"/>`
 
-writeFileSync(new URL('hell160-mark.svg', out), svg(64, 64, mark(INK)))
-writeFileSync(new URL('hell160-wordmark.svg', out), svg(word.width, 60, glyphs(INK)))
-writeFileSync(new URL('hell160-lockup.svg', out), svg(lockW, 64, lock(INK)))
+writeFileSync(new URL('hell160-dorsal.svg', out), svg('0 0 64 64', 512, 512, dorsal))
+writeFileSync(new URL('hell160-dorsal-small.svg', out), svg('0 0 64 64', 64, 64, small))
+writeFileSync(new URL('hell160-lockup.svg', out), svg(`0 0 ${LOCKUP.w} ${LOCKUP.h}`, LOCKUP.w * 2, LOCKUP.h * 2, lockup(INK)))
 writeFileSync(
   new URL('hell160-lockup-night.svg', out),
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-24 -24 ${lockW + 48} 112" width="${(lockW + 48) * 4}" height="448"><rect x="-24" y="-24" width="${lockW + 48}" height="112" fill="${INK}"/>${lock(CHALK)}</svg>\n`,
+  svg(`-24 -24 ${LOCKUP.w + 48} ${LOCKUP.h + 48}`, (LOCKUP.w + 48) * 2, (LOCKUP.h + 48) * 2,
+    `<rect x="-24" y="-24" width="${LOCKUP.w + 48}" height="${LOCKUP.h + 48}" fill="${INK}"/>${lockup(CHALK)}`),
 )
-writeFileSync(
-  new URL('../favicon.svg', out),
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="8" fill="${CHALK}"/>${mark(INK)}</svg>\n`,
-)
+// favicon: a ótica pequena é a que se lê a 16 px
+writeFileSync(new URL('../favicon.svg', out), svg('0 0 64 64', 64, 64, small))
 console.log('brand files written to public/brand')

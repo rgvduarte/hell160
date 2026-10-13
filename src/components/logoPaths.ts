@@ -1,4 +1,4 @@
-// Letragem própria do HELL160 — geometria em grelha de 60 de altura, haste de 16.
+// Letragem própria do HELL160: geometria em grelha de 60 de altura, haste de 16.
 // Usada no componente <Logo> e no script que exporta os SVG de marca (scripts/build-logo.mjs).
 
 export const GLYPHS: Record<string, { w: number; d: string }> = {
@@ -29,11 +29,31 @@ export function layout(text: string) {
   return { glyphs: out, width: x - GAP }
 }
 
-// Símbolo: um H cujas hastes são as duas margens e a travessa é o Guadiana.
-// A margem esquerda — onde a prova acontece — é a haste a cor.
-export const MARK = {
+// Identidade "O Dorsal": um dorsal de prova, HELL numa faixa escura sobre o 160 a brasa.
+// Três formatos do mesmo desenho:
+//   DORSAL       bloco empilhado 64×64, símbolo principal (avatar, medalha, ícone, página da marca)
+//   DORSAL_SMALL só o 160 sobre brasa, para favicon e tamanhos ≤ 24 px, onde HELL deixa de se ler
+//   LOCKUP       HELL + caixa brasa com 160, horizontal, para cabeçalho e rodapé
+export const DORSAL = {
   size: 64,
-  left: 'M6,6H22V58H6Z',
-  right: 'M42,6H58V58H42Z',
-  river: 'M22,25.5 L23,23.95 L24,22.56 L25,21.45 L26,20.74 L27,20.5 L28,20.74 L29,21.45 L30,22.56 L31,23.95 L32,25.5 L33,27.05 L34,28.44 L35,29.55 L36,30.26 L37,30.5 L38,30.26 L39,29.55 L40,28.44 L41,27.05 L42,25.5 L42,38.5 L41,40.05 L40,41.44 L39,42.55 L38,43.26 L37,43.5 L36,43.26 L35,42.55 L34,41.44 L33,40.05 L32,38.5 L31,36.95 L30,35.56 L29,34.45 L28,33.74 L27,33.5 L26,33.74 L25,34.45 L24,35.56 L23,36.95 L22,38.5Z',
+  field: 'M0,0H64V64H0Z',
+  band: 'M0,0H64V24H0Z',
+  hell: 'M4,4H8V10H14V4H18V20H14V14H8V20H4Z M20,4H32V8H24V10H30V14H24V16H32V20H20Z M34,4H38V16H46V20H34Z M48,4H52V16H60V20H48Z',
+  n160: 'M4,32H16V56H10V38H4Z M24,32H36V38H24V40H32Q38,40 38,46V50Q38,56 32,56H24Q18,56 18,50V38Q18,32 24,32Z M24,46V50H32V46Z M46,32H54Q60,32 60,38V50Q60,56 54,56H46Q40,56 40,50V38Q40,32 46,32Z M46,38V50H54V38Z',
+}
+
+// Ótica pequena: só o 160, hastes mais grossas, alinhado aos píxeis de 16 e 32.
+export const DORSAL_SMALL = {
+  size: 64,
+  field: 'M0,0H64V64H0Z',
+  n160: 'M4,12H12V52H8V16H4Z M20,12H36V16H20V28H32Q36,28 36,32V48Q36,52 32,52H20Q16,52 16,48V16Q16,12 20,12Z M20,32V48H32V32Z M44,12H56Q60,12 60,16V48Q60,52 56,52H44Q40,52 40,48V16Q40,12 44,12Z M44,16V48H56V16Z',
+}
+
+// Horizontal: HELL com a letragem do wordmark + caixa brasa (x 221–389) com o 160.
+export const LOCKUP = {
+  w: 389,
+  h: 82,
+  hell: 'M0,11H16V33H40V11H56V71H40V49H16V71H0Z M61,11H107V26H77V34H101V48H77V56H107V71H61Z M112,11H128V56H156V71H112Z M161,11H177V56H205V71H161Z',
+  box: 'M221,0H389V82H221Z',
+  n160: 'M233,11H263V71H247V25H233Z M282,11H318V25H284V33H306Q320,33 320,47V57Q320,71 306,71H282Q268,71 268,57V25Q268,11 282,11Z M284,47V57H304V47Z M339,11H363Q377,11 377,25V57Q377,71 363,71H339Q325,71 325,57V25Q325,11 339,11Z M341,25V57H361V25Z',
 }

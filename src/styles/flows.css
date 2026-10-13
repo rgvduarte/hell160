@@ -1,10 +1,15 @@
 /* Inscrição, alojamento e anfitriões (Register, Stay, Host, HostArea).
    Reutiliza o sistema de global.css; aqui só o que estas páginas têm de próprio. */
 
-.flow-title { font-size: clamp(44px, 8vw, 120px); }
+.flow-title { font-size: clamp(40px, 8vw, 120px); }
+.display.flow-title, .display.flow-house { overflow-wrap: anywhere; }
+.flow-title.long { font-size: clamp(32px, 7vw, 110px); }
+.flow-house { font-size: clamp(32px, 6vw, 84px); }
 .flow-h2 { font-size: clamp(32px, 4vw, 52px); }
 .flow-span { grid-column: 1 / -1; }
-.flow-fine { font-size: 13px; margin: 0; }
+.flow-fine { font-size: 13px; margin-bottom: 0; }
+.flow-form > :first-child { margin-top: 0; }
+.flow-form > .flow-err-line, .flow-book .flow-err-line { margin-top: 10px; }
 
 /* ---------- formulário + resumo ---------- */
 .flow-split { grid-template-columns: 7fr 4fr; }
@@ -16,7 +21,7 @@
 
 .field .flow-err { color: var(--ember-ink); }
 .field input[aria-invalid='true'], .field select[aria-invalid='true'] { border-color: var(--ember); }
-.notice.flow-block { margin: 0; }
+.notice.flow-block { margin-bottom: 0; }
 .notice.flow-block a { font-weight: 600; }
 
 .flow-steplabel { display: none; }
@@ -36,19 +41,16 @@
 /* casas no passo de alojamento: miniatura da fachada */
 .flow-houses label { grid-template-columns: 28px 92px 1fr auto; }
 .flow-thumb { display: block; aspect-ratio: 4 / 3; overflow: hidden; background: var(--chalk-2); }
-.flow-thumb.none { background: transparent; border: 1px dashed currentColor; opacity: 0.35; }
+.flow-houses .flow-none { grid-column: span 2; }
 @media (max-width: 560px) {
   .flow-houses label { grid-template-columns: 24px 1fr auto; gap: 12px; }
   .flow-thumb { display: none; }
+  .flow-houses .flow-none { grid-column: auto; }
 }
 
-/* atestado médico */
-.flow-file input[type='file'] { font: 400 15px var(--sans); padding: 10px 0; }
-.flow-file input[type='file']::file-selector-button {
-  font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.08em;
-  padding: 10px 14px; margin-right: 14px; border: 2px solid var(--fg); background: transparent; color: var(--fg); cursor: pointer;
-}
-.flow-file input[type='file']::file-selector-button:hover { background: var(--fg); color: var(--bg); }
+/* atestado médico: input nativo escondido, botão e texto em português */
+.flow-filebtn { position: relative; }
+.flow-filebtn:focus-within { outline: 2px solid var(--ember); outline-offset: 3px; }
 .flow-file-row { display: flex; gap: 8px 16px; align-items: center; flex-wrap: wrap; padding: 8px 0; border-bottom: 2px solid var(--fg); }
 .flow-file-row .name { font: 500 14px var(--mono); overflow-wrap: anywhere; }
 
@@ -146,7 +148,7 @@
 
 .ha-books { border-top: 2px solid var(--fg); }
 .ha-book {
-  display: grid; grid-template-columns: 130px minmax(0, 1.5fr) minmax(0, 1.3fr) 64px 80px minmax(190px, auto);
+  display: grid; grid-template-columns: 130px minmax(0, 1.5fr) minmax(0, 1.3fr) 88px 80px minmax(190px, auto);
   grid-template-areas: 'ref who nights ppl total acts' 'msg msg msg msg msg msg';
   gap: 6px 20px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line);
 }
@@ -154,7 +156,7 @@
 .ha-book .ref { grid-area: ref; }
 .ha-book .who { grid-area: who; }
 .ha-book .nights { grid-area: nights; font-size: 15px; }
-.ha-book .ppl { grid-area: ppl; font: 500 14px var(--mono); }
+.ha-book .ppl { grid-area: ppl; font: 500 14px var(--mono); white-space: nowrap; }
 .ha-book .total { grid-area: total; font: 500 15px var(--mono); text-align: right; border: 0; margin: 0; padding: 0; display: block; }
 .ha-book .acts { grid-area: acts; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .ha-book .msg { grid-area: msg; margin-top: 6px; }

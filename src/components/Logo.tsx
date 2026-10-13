@@ -1,47 +1,51 @@
-import { layout, MARK } from './logoPaths'
+import { DORSAL, DORSAL_SMALL, LOCKUP } from './logoPaths'
 
-const WORD = layout('HELL160')
-const SPLIT = 4 // "HELL" | "160"
+// Cores fixas de marca (o dorsal é um objeto: não muda com o tema). O HELL do lockup segue currentColor.
+const INK = 'var(--brand-ink, #15120f)'
+const EMBER = 'var(--brand-ember, #c8361b)'
+const CHALK = 'var(--brand-chalk, #efe9df)'
 
-export function Mark({ size = 32, title = 'HELL160' }: { size?: number; title?: string }) {
+// Símbolo "O Dorsal". Abaixo de 28 px usa a ótica pequena (só o 160).
+export function Mark({ size = 64, title = 'HELL160' }: { size?: number; title?: string }) {
+  if (size < 28) return <MarkSmall size={size} title={title} />
   return (
-    <svg viewBox={`0 0 ${MARK.size} ${MARK.size}`} width={size} height={size} role="img" aria-label={title}>
-      <path d={MARK.left} fill="var(--ember)" />
-      <path d={MARK.right} fill="currentColor" />
-      <path d={MARK.river} fill="currentColor" />
+    <svg viewBox={`0 0 ${DORSAL.size} ${DORSAL.size}`} width={size} height={size} role="img" aria-label={title} style={{ display: 'block' }}>
+      <path d={DORSAL.field} fill={EMBER} />
+      <path d={DORSAL.band} fill={INK} />
+      <path d={DORSAL.hell} fill={CHALK} fillRule="evenodd" />
+      <path d={DORSAL.n160} fill={CHALK} fillRule="evenodd" />
     </svg>
   )
 }
 
-export function Wordmark({ height = 24, accent = true }: { height?: number; accent?: boolean }) {
-  const w = WORD.width
+export function MarkSmall({ size = 16, title = 'HELL160' }: { size?: number; title?: string }) {
+  return (
+    <svg viewBox={`0 0 ${DORSAL_SMALL.size} ${DORSAL_SMALL.size}`} width={size} height={size} role="img" aria-label={title} style={{ display: 'block' }}>
+      <path d={DORSAL_SMALL.field} fill={EMBER} />
+      <path d={DORSAL_SMALL.n160} fill={CHALK} fillRule="evenodd" />
+    </svg>
+  )
+}
+
+// Horizontal: HELL (cor do texto) + caixa brasa com 160.
+export function Lockup({ height = 30, title = 'HELL160' }: { height?: number; title?: string }) {
   return (
     <svg
-      viewBox={`0 0 ${w} 60`}
+      viewBox={`0 0 ${LOCKUP.w} ${LOCKUP.h}`}
       height={height}
-      width={(height * w) / 60}
+      width={(height * LOCKUP.w) / LOCKUP.h}
       role="img"
-      aria-label="HELL160"
+      aria-label={title}
       style={{ display: 'block' }}
     >
-      {WORD.glyphs.map((g, i) => (
-        <path
-          key={i}
-          d={g.d}
-          transform={`translate(${g.x} 0)`}
-          fill={accent && i >= SPLIT ? 'var(--ember)' : 'currentColor'}
-          fillRule="evenodd"
-        />
-      ))}
+      <path d={LOCKUP.hell} fill="currentColor" fillRule="evenodd" />
+      <path d={LOCKUP.box} fill={EMBER} />
+      <path d={LOCKUP.n160} fill={CHALK} fillRule="evenodd" />
     </svg>
   )
 }
 
-export function Lockup({ height = 28 }: { height?: number }) {
-  return (
-    <span className="lockup" style={{ gap: height * 0.4 }}>
-      <Mark size={height} />
-      <Wordmark height={height * 0.62} />
-    </span>
-  )
+// Compatibilidade: o antigo wordmark passa a ser o lockup horizontal.
+export function Wordmark({ height = 24 }: { height?: number }) {
+  return <Lockup height={height} />
 }

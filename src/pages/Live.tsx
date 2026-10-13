@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ROUTE_KM, WAYPOINTS, pointAtKm } from '../data/route'
 import { RouteMap } from '../components/RouteMap'
 import { ElevationProfile } from '../components/Graphics'
+import '../styles/community.css'
 
 // Simulação do tracking em direto. Em produção, as posições chegam da app (telemóvel)
 // e do relógio emparelhado; aqui são geradas para mostrar o fluxo e os alertas.
@@ -40,6 +42,11 @@ const RUNNERS: Runner[] = (() => {
   })
 })()
 
+const BIBS = new Set(RUNNERS.map((r) => r.bib))
+const FIRST_BIB = RUNNERS[0].bib
+const LAST_BIB = RUNNERS[RUNNERS.length - 1].bib
+const DEFAULT_BIB = 118
+
 const LIFE = WAYPOINTS.filter((w) => w.kind === 'life').map((w) => w.km)
 
 function rawKm(rn: Runner, h: number) {
@@ -62,12 +69,15 @@ function kmAt(rn: Runner, h: number): { km: number; out: boolean; sos?: boolean;
 // zona sem rede móvel: descida ao Pulo do Lobo
 const NO_COVERAGE: [number, number] = [92, 110]
 
+type St = 'ok' | 'warn' | 'sos' | 'out' | 'fin'
+const ST_LABEL: Record<St, string> = { ok: 'Em prova', warn: 'Sem rede móvel', sos: 'SOS', out: 'Fora de prova', fin: 'Chegou' }
+
 function statusOf(rn: Runner, h: number) {
   const p = kmAt(rn, h)
   const fin = p.km >= ROUTE_KM
   const phoneOk = !(p.km > NO_COVERAGE[0] && p.km < NO_COVERAGE[1])
   const lastCp = [...WAYPOINTS].reverse().find((w) => w.km <= p.km)
-  const st = p.sos ? 'sos' : fin ? 'fin' : p.out ? 'out' : !phoneOk ? 'warn' : 'ok'
+  const st: St = p.sos ? 'sos' : fin ? 'fin' : p.out ? 'out' : !phoneOk ? 'warn' : 'ok'
   return { ...p, fin, phoneOk, lastCp, st }
 }
 
@@ -79,13 +89,119 @@ const fmt = (h: number) => {
   const dlabel = day < 24 * 60 ? 'Sex' : day < 48 * 60 ? 'Sáb' : 'Dom'
   return `${dlabel} ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
 }
-const elapsed = (h: number) => `${Math.floor(h)}h${String(Math.round((h % 1) * 60)).padStart(2, '0')}`
+const elapsed = (h: number) => {
+  const m = Math.round(h * 60)
+  return `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`
+}
+
+// ---------- pesquisa ----------
+
+const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+
+function matches(rn: Runner, query: string) {
+  const q = fold(query).replace(/^#/, '')
+  if (!q) return true
+  if (/^\d+$/.test(q)) return String(rn.bib).startsWith(q)
+  return fold(rn.name).includes(q)
+}
+
+// ---------- atletas seguidos (só neste browser) ----------
+
+const FOLLOW_KEY = 'hell160.follow'
+
+function readFollow(): number[] {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(FOLLOW_KEY) ?? '[]')
+    return Array.isArray(v) ? v.filter((x): x is number => Number.isInteger(x) && BIBS.has(x)) : []
+  } catch {
+    return []
+  }
+}
+
+function useFollow() {
+  const [follow, setFollow] = useState<number[]>(readFollow)
+  useEffect(() => {
+    const sync = (e: StorageEvent) => {
+      if (e.key === FOLLOW_KEY) setFollow(readFollow())
+    }
+    window.addEventListener('storage', sync)
+    return () => window.removeEventListener('storage', sync)
+  }, [])
+  const toggle = useCallback((bib: number) => {
+    setFollow((cur) => {
+      const next = cur.includes(bib) ? cur.filter((b) => b !== bib) : [...cur, bib]
+      try {
+        localStorage.setItem(FOLLOW_KEY, JSON.stringify(next))
+      } catch {
+        /* sem armazenamento: fica só nesta visita */
+      }
+      return next
+    })
+  }, [])
+  return [follow, toggle] as const
+}
+
+// ---------- copiar link ----------
+
+async function copyText(text: string) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {
+    /* tenta o método antigo */
+  }
+  const active = document.activeElement as HTMLElement | null
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.setAttribute('readonly', '')
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    const ok = document.execCommand('copy')
+    ta.remove()
+    return ok
+  } catch {
+    return false
+  } finally {
+    active?.focus()
+  }
+}
 
 export function Live() {
   const [h, setH] = useState(13.6)
   const [speed, setSpeed] = useState(0)
-  const [sel, setSel] = useState<number | null>(118)
   const [view, setView] = useState<'org' | 'public'>('org')
+  const [query, setQuery] = useState('')
+  const [onlyFollowed, setOnlyFollowed] = useState(false)
+  const [follow, toggleFollow] = useFollow()
+  const [copied, setCopied] = useState<'ok' | 'fail' | null>(null)
+  const boardRef = useRef<HTMLDivElement>(null)
+
+  // O dorsal selecionado vive no URL (?dorsal=123): o link pode ser partilhado e o botão "voltar" funciona.
+  const [params, setParams] = useSearchParams()
+  const param = params.get('dorsal')
+  const paramBib = param != null && /^\s*#?\d+\s*$/.test(param) ? Number(param.replace(/\D/g, '')) : NaN
+  const badParam = param != null && !BIBS.has(paramBib)
+  const sel: number | null = param == null ? DEFAULT_BIB : badParam ? null : paramBib
+
+  const setSel = useCallback(
+    (bib: number) => {
+      setCopied(null)
+      setParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.set('dorsal', String(bib))
+          return next
+        },
+        { replace: true },
+      )
+    },
+    [setParams],
+  )
 
   useEffect(() => {
     if (!speed) return
@@ -95,22 +211,83 @@ export function Live() {
 
   const rows = useMemo(
     () =>
-      RUNNERS.map((rn) => ({ rn, s: statusOf(rn, h) })).sort((a, b) => {
-        const rank = (x: typeof a) => (x.s.st === 'out' ? 1 : 0)
-        return rank(a) - rank(b) || b.s.km - a.s.km
-      }),
+      RUNNERS.map((rn) => ({ rn, s: statusOf(rn, h) }))
+        .sort((a, b) => {
+          const rank = (x: typeof a) => (x.s.st === 'out' ? 1 : 0)
+          return rank(a) - rank(b) || b.s.km - a.s.km
+        })
+        .map((r, i) => ({ ...r, pos: r.s.st === 'out' ? null : i + 1 })),
     [h],
   )
+  const visible = rows.filter((r) => (!onlyFollowed || follow.includes(r.rn.bib)) && matches(r.rn, query))
   const sos = rows.filter((r) => r.s.st === 'sos')
   const selected = rows.find((r) => r.rn.bib === sel)
   const counts = {
-    race: rows.filter((r) => r.s.st === 'ok' || r.s.st === 'warn').length,
+    race: rows.filter((r) => r.s.st === 'ok' || r.s.st === 'warn' || r.s.st === 'sos').length,
     fin: rows.filter((r) => r.s.st === 'fin').length,
     out: rows.filter((r) => r.s.st === 'out').length,
   }
 
+  // linha selecionada sempre visível dentro da tabela (só quando a tabela tem scroll próprio)
+  useEffect(() => {
+    const box = boardRef.current
+    if (!box || sel == null || box.scrollHeight <= box.clientHeight + 1) return
+    const row = box.querySelector<HTMLElement>(`tr[data-bib="${sel}"]`)
+    if (!row) return
+    const head = box.querySelector('thead')?.getBoundingClientRect().height ?? 0
+    const b = box.getBoundingClientRect()
+    const r = row.getBoundingClientRect()
+    if (r.top < b.top + head) box.scrollTop -= b.top + head - r.top
+    else if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom
+  }, [sel])
+
+  function search(v: string) {
+    setQuery(v)
+    const q = fold(v).replace(/^#/, '')
+    if (!q) return
+    const exact = /^\d+$/.test(q) && BIBS.has(Number(q)) ? Number(q) : null
+    const hits = RUNNERS.filter((rn) => matches(rn, v))
+    if (exact != null) setSel(exact)
+    else if (hits.length === 1) setSel(hits[0].bib)
+  }
+
+  function onSearchKey(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (visible[0]) setSel(visible[0].rn.bib)
+    } else if (e.key === 'Escape') {
+      setQuery('')
+    }
+  }
+
+  function onRowKey(e: KeyboardEvent<HTMLTableRowElement>, bib: number) {
+    if (e.target !== e.currentTarget) return
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      setSel(bib)
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      const sib = e.key === 'ArrowDown' ? e.currentTarget.nextElementSibling : e.currentTarget.previousElementSibling
+      if (sib instanceof HTMLElement && sib.tabIndex === 0) sib.focus()
+    }
+  }
+
+  const shareUrl = sel != null ? `${window.location.origin}${window.location.pathname}?dorsal=${sel}` : ''
+
+  async function copyLink() {
+    setCopied((await copyText(shareUrl)) ? 'ok' : 'fail')
+  }
+
+  useEffect(() => {
+    if (copied !== 'ok') return
+    const t = window.setTimeout(() => setCopied(null), 2500)
+    return () => window.clearTimeout(t)
+  }, [copied])
+
+  const followed = (bib: number) => follow.includes(bib)
+
   return (
-    <section className="night" style={{ minHeight: 'calc(100svh - 64px)' }}>
+    <section className="night cm-live" style={{ minHeight: 'calc(100svh - 64px)' }}>
       <div className="wrap" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="row between" style={{ alignItems: 'end' }}>
           <div>
@@ -135,14 +312,17 @@ export function Live() {
           type="range" min={0} max={36} step={0.05} value={h} onChange={(e) => setH(+e.target.value)}
           aria-label="Tempo de prova" style={{ width: '100%', accentColor: 'var(--ember)', marginTop: 16 }}
         />
-        <div className="row mono muted" style={{ gap: 24, fontSize: 12 }}>
+        <div className="row mono muted" style={{ gap: '6px 24px', fontSize: 12 }}>
           <span>Em prova {counts.race}</span><span>Chegados {counts.fin}</span><span>Desistências {counts.out}</span>
           <span>Sem rede móvel: km {NO_COVERAGE[0]}–{NO_COVERAGE[1]}</span>
         </div>
+        <p className="muted cm-live-note" style={{ margin: '12px 0 0' }}>
+          Simulação com 36 atletas fictícios. Na prova, as posições chegam da app e do relógio de cada atleta.
+        </p>
       </div>
 
       {view === 'org' && sos.map(({ rn, s }) => (
-        <div key={rn.bib} className="alert">
+        <div key={rn.bib} className="alert" role="alert">
           <span><b>SOS · #{rn.bib} {rn.name}</b> · km {s.km.toFixed(1)} · posição por relógio e telemóvel · equipa de resgate 2 a caminho</span>
           <button className="chip" style={{ borderColor: 'currentColor', color: 'inherit' }} onClick={() => setSel(rn.bib)}>Ver</button>
         </div>
@@ -153,22 +333,60 @@ export function Live() {
           <RouteMap labels>
             {rows.filter((r) => !r.s.out || r.s.fin).map(({ rn, s }) => {
               const [x, y] = pointAtKm(view === 'public' ? (s.lastCp?.km ?? 0) : s.km)
-              const cls = `runner${rn.bib === sel ? ' sel' : ''}${s.st === 'sos' && view === 'org' ? ' sos' : ''}`
+              const isSel = rn.bib === sel
+              const cls = [
+                'runner',
+                isSel && 'sel',
+                s.st === 'sos' && view === 'org' && 'sos',
+                followed(rn.bib) && 'cm-followed',
+                onlyFollowed && !followed(rn.bib) && !isSel && 'cm-dim',
+              ].filter(Boolean).join(' ')
               return (
                 <g key={rn.bib} className={cls} style={{ transform: `translate(${x}px, ${y}px)` }} onClick={() => setSel(rn.bib)}>
-                  <circle r={rn.bib === sel ? 10 : 6} fill={rn.bib === sel ? 'var(--ember)' : s.st === 'warn' && view === 'org' ? '#e0a43a' : '#efe9df'} />
+                  <title>#{rn.bib} {rn.name}</title>
+                  <circle r={isSel ? 10 : 6} fill={isSel ? 'var(--ember)' : s.st === 'warn' && view === 'org' ? '#e0a43a' : '#efe9df'} />
                 </g>
               )
             })}
           </RouteMap>
+
+          {badParam && (
+            <p className="notice mt" role="status">
+              O dorsal {param} não existe nesta simulação. Os dorsais vão de {FIRST_BIB} a {LAST_BIB}.
+            </p>
+          )}
+
           {selected && (
             <div className="mt">
-              <div className="row between">
+              <div className="cm-runner-head">
                 <h3 className="cond">#{selected.rn.bib} {selected.rn.name} <span className="muted">· {selected.rn.country}</span></h3>
                 <span className="mono">{selected.s.km.toFixed(1)} / {ROUTE_KM} km</span>
               </div>
-              <ElevationProfile height={140} marks progressKm={selected.s.km} />
+              <div className="cm-runner-actions mt-s">
+                <button
+                  type="button"
+                  className="btn small ghost noarrow"
+                  aria-pressed={followed(selected.rn.bib)}
+                  onClick={() => toggleFollow(selected.rn.bib)}
+                >
+                  {followed(selected.rn.bib) ? 'A seguir' : 'Seguir'}
+                </button>
+                <button type="button" className="btn small ghost noarrow" onClick={copyLink}>Copiar link</button>
+                <span className="mono muted" role="status" aria-live="polite">
+                  {copied === 'ok' ? 'Link copiado' : ''}
+                </span>
+              </div>
+              {copied === 'fail' && (
+                <div className="mt-s">
+                  <label className="mono muted" htmlFor="live-share">Copie o link à mão</label>
+                  <input id="live-share" className="cm-copy-field mt-s" readOnly value={shareUrl} onFocus={(e) => e.currentTarget.select()} autoFocus />
+                </div>
+              )}
+              <div className="mt-s">
+                <ElevationProfile height={140} marks progressKm={selected.s.km} />
+              </div>
               <dl className="kv mt-s" style={{ maxWidth: 560 }}>
+                <dt>Estado</dt><dd>{ST_LABEL[selected.s.st]}{selected.pos ? ` · ${selected.pos}.º` : ''}</dd>
                 <dt>Último controlo</dt><dd>{selected.s.lastCp?.name} · km {selected.s.lastCp?.km.toFixed(1)}</dd>
                 <dt>Ritmo médio</dt><dd>{h > 0 && selected.s.km > 0 ? `${((h * 60) / selected.s.km).toFixed(1)} min/km` : '—'}</dd>
                 {view === 'org' && (
@@ -182,21 +400,92 @@ export function Live() {
             </div>
           )}
         </div>
+
         <div className="live-side">
-          <table className="board">
-            <thead><tr><th>#</th><th>Dorsal</th><th>Atleta</th><th>km</th><th /></tr></thead>
-            <tbody>
-              {rows.map(({ rn, s }, i) => (
-                <tr key={rn.bib} className={rn.bib === sel ? 'sel' : ''} onClick={() => setSel(rn.bib)}>
-                  <td>{s.st === 'out' ? '—' : i + 1}</td>
-                  <td>{rn.bib}</td>
-                  <td style={{ fontFamily: 'var(--sans)' }}>{rn.name}</td>
-                  <td>{s.fin ? 'META' : s.st === 'out' ? (s.rescued ? 'RESG.' : 'DNF') : (view === 'public' ? s.lastCp?.km.toFixed(0) : s.km.toFixed(1))}</td>
-                  <td><span className={`st ${s.st === 'fin' ? '' : view === 'public' && s.st !== 'out' ? '' : s.st}`} title={s.st} /></td>
+          <div className="cm-tools">
+            <div className="cm-search">
+              <label htmlFor="live-q" className="sr-only">Procurar por dorsal ou nome</label>
+              <input
+                id="live-q"
+                type="search"
+                value={query}
+                onChange={(e) => search(e.target.value)}
+                onKeyDown={onSearchKey}
+                placeholder="Dorsal ou nome"
+                autoComplete="off"
+                enterKeyHint="search"
+              />
+              {query && (
+                <button type="button" onClick={() => setQuery('')}>Limpar</button>
+              )}
+            </div>
+            <div className="row between" style={{ gap: 8 }}>
+              <button type="button" className="chip" aria-pressed={onlyFollowed} onClick={() => setOnlyFollowed((x) => !x)}>
+                Só os que sigo · {follow.length}
+              </button>
+              <span className="mono muted" style={{ fontSize: 11 }} aria-live="polite">
+                {visible.length === rows.length ? `${rows.length} atletas` : `${visible.length} de ${rows.length}`}
+              </span>
+            </div>
+          </div>
+          <div className="cm-board" ref={boardRef}>
+            <table className="board" aria-label="Classificação em direto (simulação)">
+              <thead>
+                <tr>
+                  <th>#</th><th>Dorsal</th><th>Atleta</th><th>km</th><th><span className="sr-only">Estado</span></th>
+                  <th className="cm-fcol"><span className="sr-only">Seguir</span></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {visible.map(({ rn, s, pos }) => {
+                  const isSel = rn.bib === sel
+                  const dot = s.st === 'fin' ? '' : view === 'public' && s.st !== 'out' ? '' : s.st
+                  return (
+                    <tr
+                      key={rn.bib}
+                      data-bib={rn.bib}
+                      className={isSel ? 'sel' : ''}
+                      tabIndex={0}
+                      aria-selected={isSel}
+                      onClick={() => setSel(rn.bib)}
+                      onKeyDown={(e) => onRowKey(e, rn.bib)}
+                    >
+                      <td>{pos ?? '—'}</td>
+                      <td>{rn.bib}</td>
+                      <td className="cm-name">{rn.name}</td>
+                      <td>{s.fin ? 'META' : s.st === 'out' ? (s.rescued ? 'RESG.' : 'DNF') : (view === 'public' ? s.lastCp?.km.toFixed(0) : s.km.toFixed(1))}</td>
+                      <td>
+                        <span className={`st ${dot}`} title={ST_LABEL[s.st]} />
+                        <span className="sr-only">{ST_LABEL[s.st]}</span>
+                      </td>
+                      <td className="cm-fcol">
+                        <button
+                          type="button"
+                          className="cm-follow"
+                          aria-pressed={followed(rn.bib)}
+                          aria-label={`Seguir ${rn.name}, dorsal ${rn.bib}`}
+                          title={followed(rn.bib) ? 'A seguir' : 'Seguir'}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleFollow(rn.bib)
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  )
+                })}
+                {visible.length === 0 && (
+                  <tr className="empty">
+                    <td colSpan={6}>
+                      {onlyFollowed && follow.length === 0
+                        ? 'Ainda não segue ninguém. Carregue no + ao lado de um atleta para o acompanhar aqui.'
+                        : `Nenhum atleta corresponde a «${query.trim()}».`}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>

@@ -1,0 +1,102 @@
+/* Segurança, Parceiros, Live e Provas.
+   Reutiliza o sistema de global.css; aqui só o que estas páginas têm de próprio (prefixo cm-). */
+
+.cm-anchor { scroll-margin-top: 88px; }
+.cm-h2 { font-size: clamp(32px, 4vw, 52px); }
+.cm-fine { font-size: 14px; margin: 0; }
+.summary.cm-static { position: static; }
+.cm-done:focus { outline: none; }
+.cm-done .kv dd { overflow-wrap: anywhere; }
+.cm-ref { font: 500 clamp(20px, 2.4vw, 28px)/1.1 var(--mono); letter-spacing: 0.02em; margin: 6px 0 0; overflow-wrap: anywhere; }
+.field textarea.cm-textarea { resize: vertical; min-height: 84px; font: 400 17px/1.4 var(--sans); }
+
+/* ---------- segurança: progresso dos compromissos ---------- */
+.cm-progress { margin: 0; }
+.cm-progress .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.cm-progress .head b { font: 900 clamp(28px, 3.2vw, 44px)/1 var(--display); font-variation-settings: 'wdth' 100; letter-spacing: -0.02em; }
+.cm-cells { display: grid; grid-template-columns: repeat(var(--n, 8), 1fr); gap: 4px; margin-top: 14px; }
+.cm-cells span { position: relative; height: 18px; border: 1px solid var(--fg); overflow: hidden; }
+.cm-cells span i { position: absolute; inset: 0 auto 0 0; background: var(--ember); }
+.cm-progress .foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+
+/* lista de locais com valor prometido */
+.cm-places li { display: flex; justify-content: space-between; align-items: center; gap: 8px 16px; flex-wrap: wrap; }
+.cm-places .amt { font: 500 12px var(--mono); letter-spacing: 0.04em; color: var(--muted); }
+.cm-places .right { display: flex; gap: 12px; align-items: center; margin-left: auto; }
+
+/* quem já apoiou */
+.cm-backers { list-style: none; padding: 0; margin: 0; border-top: 2px solid var(--fg); }
+.cm-backers li { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.cm-backers .who { font-weight: 600; overflow-wrap: anywhere; }
+.cm-backers .val { font: 500 14px var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.cm-backers .where { grid-column: 1 / -1; font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+
+/* valor: chips com uma linha de nota */
+.cm-amounts .chip small { display: block; margin-top: 3px; font-size: 10px; opacity: 0.75; text-transform: none; letter-spacing: 0.02em; }
+.cm-amounts .chip { text-align: left; }
+
+/* ---------- live ---------- */
+.cm-live .live-side { overflow: visible; max-height: none; }
+.cm-tools { padding: 16px 16px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 12px; }
+.cm-search { display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--fg); }
+.cm-search:focus-within { border-color: var(--ember); }
+.cm-search input { flex: 1; min-width: 0; font: 400 16px var(--sans); color: var(--fg); background: transparent; border: 0; padding: 10px 0; border-radius: 0; }
+.cm-search input:focus { outline: none; }
+.cm-search input::-webkit-search-cancel-button { display: none; }
+.cm-search button { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; background: none; border: 0; color: var(--muted); cursor: pointer; padding: 8px 0 8px 8px; }
+.cm-search button:hover { color: var(--ember); }
+.cm-board { max-height: calc(100svh - 200px); overflow: auto; overscroll-behavior: contain; }
+.cm-board .board tr:focus-visible { outline: 2px solid var(--ember); outline-offset: -2px; }
+.cm-board .board td.cm-name { font-family: var(--sans); }
+.cm-board .board th.cm-fcol, .cm-board .board td.cm-fcol { width: 40px; padding-left: 0; padding-right: 8px; text-align: right; }
+.cm-board .empty td { cursor: default; color: var(--muted); font-family: var(--sans); padding: 20px 8px; }
+.cm-board .empty:hover td { background: none; }
+
+/* botão seguir: quadrado com visto desenhado em CSS */
+.cm-follow {
+  position: relative; width: 24px; height: 24px; padding: 0; border: 1px solid currentColor;
+  background: transparent; color: inherit; cursor: pointer; vertical-align: middle;
+}
+.cm-follow::before, .cm-follow::after { content: ''; position: absolute; background: currentColor; left: 50%; top: 50%; }
+.cm-follow::before { width: 10px; height: 1.5px; transform: translate(-50%, -50%); }
+.cm-follow::after { width: 1.5px; height: 10px; transform: translate(-50%, -50%); }
+.cm-follow[aria-pressed='true'] { background: var(--ember); border-color: var(--ember); color: var(--chalk); }
+.cm-follow[aria-pressed='true']::before { width: 5px; height: 2px; transform: translate(-80%, 0) rotate(45deg); }
+.cm-follow[aria-pressed='true']::after { width: 2px; height: 11px; transform: translate(40%, -60%) rotate(40deg); }
+.board tr.sel .cm-follow[aria-pressed='true'] { background: var(--chalk); color: var(--ember); border-color: var(--chalk); }
+.cm-live .runner.cm-followed circle { stroke: var(--ember); stroke-width: 3; }
+.cm-live .runner { cursor: pointer; }
+
+.cm-runner-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; }
+.cm-runner-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.cm-copy-field { width: 100%; font: 13px var(--mono); color: var(--fg); background: transparent; border: 1px solid var(--line); padding: 8px; }
+.cm-live-note { font-size: 14px; }
+.cm-live .alert { flex-wrap: wrap; }
+
+@media (max-width: 1100px) {
+  .cm-live .live-map { border-right: 0; }
+  .cm-board { max-height: none; overflow: visible; }
+  .cm-board .board th { top: 64px; z-index: 1; }
+  .cm-tools { padding: 16px var(--gutter) 12px; }
+  .cm-board .board td:first-child, .cm-board .board th:first-child { padding-left: var(--gutter); }
+  .cm-board .board td:last-child, .cm-board .board th:last-child { padding-right: var(--gutter); }
+}
+@media (max-width: 560px) {
+  .cm-live .live-map { padding-left: var(--gutter); padding-right: var(--gutter); }
+  .cm-live .kv { gap: 8px 12px; }
+  .cm-live .kv dd { overflow-wrap: anywhere; }
+}
+
+/* ---------- provas: vagas ---------- */
+.races.cm-races .race-row { grid-template-columns: 150px 1.2fr 1fr 1fr 1fr 1fr 150px; }
+.cm-left.low { color: var(--ember); }
+.race-row:hover .cm-left.low { color: inherit; }
+.cm-sm-only { display: none; }
+@media (max-width: 900px) {
+  .races.cm-races .race-row { grid-template-columns: 76px 1fr auto; }
+  .cm-sm-only { display: inline; }
+}
+.cm-soldout { color: var(--ember); }
+.stats b.cm-word { font-size: clamp(20px, 2.2vw, 32px); line-height: clamp(30px, 3.6vw, 54px); }
+.cm-cal { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.cm-live .runner.cm-dim { opacity: 0.25; }
