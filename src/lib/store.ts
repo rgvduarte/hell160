@@ -92,7 +92,7 @@ export type Pledge = {
 export type Lead = {
   id: string
   createdAt: string
-  kind: 'parceiro' | 'formacao'
+  kind: 'parceiro' | 'formacao' | 'newsletter'
   name: string
   email: string
   org?: string

@@ -1,172 +1,403 @@
-import { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { EVENT, IMPACT, RACES, currentPrice } from '../data/event'
-import { LISTINGS } from '../data/listings'
-import { Contours, Countdown } from '../components/Graphics'
-import { ScrollStory } from '../components/ScrollStory'
-import { WAYPOINTS } from '../data/route'
-import { usePrefersReducedMotion, useScrollVars } from '../lib/scroll'
-import { HousePlate } from '../components/HousePlate'
+import { EVENT, RACES, currentPrice, type Race } from '../data/event'
+import { MEDIA, PRESS, RACE_SLOT, TESTIMONIALS, hasMedia, mediaUrl } from '../data/media'
+import { SITE, primaryAction, registrationLabel } from '../data/site'
+import { mapRoute } from '../data/routes'
+import { allListings } from '../lib/domain'
+import { useCollection } from '../lib/store'
+import { Countdown } from '../components/Graphics'
 import { HeroLettering } from '../components/Logo'
-import { RaceTable } from './Races'
+import { Media, VideoFacade } from '../components/Media'
+import { Rail } from '../components/Rail'
+import { ScrollStory } from '../components/ScrollStory'
+import { TrailMap } from '../components/TrailMap'
+import { Practical } from '../components/Practical'
+import { Newsletter } from '../components/Newsletter'
+import { IconArrowRight, IconArrowUpRight, IconClimb, IconClock, IconMoon, IconPin, IconRoute } from '../components/Icons'
+import '../styles/home.css'
+
+const MAIN = RACES[0]
 
 export function Home() {
-  const main = RACES[0]
-  const price = currentPrice(main)
-  const reduced = usePrefersReducedMotion()
-  const heroRef = useRef<HTMLElement>(null)
-  const stripRef = useRef<HTMLDivElement>(null)
-  useScrollVars(heroRef, !reduced)
-  useScrollVars(stripRef, !reduced)
-  const stops = WAYPOINTS.filter((w, i, a) => !w.name.startsWith('Abastecimento') && a.findIndex((x) => x.name === w.name) === i)
   return (
     <>
-      <section className="hero" ref={heroRef}>
-        <Contours seed={3} />
-        <div className="wrap">
-          <div className="meta mono">
-            <span>Edição {EVENT.edition}</span>
-            <span>2 — 4 julho</span>
-            <span>{EVENT.place}</span>
-            <span className="ember">Inscrições abertas</span>
-          </div>
-          <div style={{ position: 'relative' }}>
-            <h1 style={{ margin: 0 }}>
-              <HeroLettering />
-              <span className="hero-tagline">Shadows and Dust</span>
-            </h1>
-          </div>
-          <div className="foot">
-            <div>
-              <p className="lede" style={{ marginBottom: 28 }}>
-                164 km em autonomia total pela margem esquerda do Guadiana, com partida às dez da noite e 36 horas de limite.
-              </p>
-              <div className="row">
-                <Link className="btn" to="/inscricao">
-                  Inscrever{price ? ` · ${price.eur} €` : ''}
-                </Link>
-                <Link className="btn ghost" to="/alojamento">
-                  Dormir na aldeia
-                </Link>
-              </div>
-            </div>
-            <div>
-              <p className="mono muted" style={{ margin: '0 0 10px' }}>Partida HELL160 · sex 2 jul · 22:00</p>
-              <Countdown to={EVENT.startISO} />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="wrap">
-        <div className="stats">
-          <div><b>164</b><span>km</span></div>
-          <div><b>2648</b><span>m D+</span></div>
-          <div><b>36</b><span>horas limite</span></div>
-          <div><b>13</b><span>abastecimentos</span></div>
-          <div><b>3</b><span>bases de vida</span></div>
-          <div><b className="ember">45°</b><span>julho, à tarde</span></div>
-        </div>
-      </section>
-
-      <section className="sec night cause-home">
-        <div className="wrap split" style={{ alignItems: 'end' }}>
-          <h2 className="display">Corremos pelas aldeias</h2>
-          <div className="stack">
-            <p className="lede">
-              O HELL160 é organizado para levar desfibrilhadores e socorro às aldeias da margem esquerda do Guadiana, longe dos
-              hospitais. Dois aparelhos já estão conseguidos. O objetivo é haver um em cada aldeia do percurso.
-            </p>
-            <div className="row">
-              <Link className="btn ember" to="/causa">Conhecer a causa</Link>
-              <Link className="btn ghost" to="/apoiar">Apoiar</Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="sec">
-        <div className="wrap split">
-          <h2 className="display">Pó de dia, sombra de noite</h2>
-          <div className="prose stack">
-            <p className="lede" style={{ maxWidth: '40ch' }}>
-              Não há montanhas no HELL160. Há distância, calor e noite, numa planície que mostra sempre quanto falta.
-            </p>
-            <p>
-              Circular pela GR15 e GR15.2 a partir do pavilhão de A-do-Pinto: estradões, montado, a descida ao Pulo do Lobo e as
-              aldeias que ficam acordadas para ver passar quem ainda corre. Em autonomia total, com navegação por GPS e material
-              obrigatório verificado à partida e em prova.
-            </p>
-          </div>
-        </div>
-      </section>
-
+      <Hero />
+      <Cause />
+      <RacesRow />
       <ScrollStory />
+      <Practical />
+      <Houses />
+      <Territory />
+      {hasMedia('video-edicao') && <EditionVideo />}
+      {TESTIMONIALS.length > 0 && <Testimonials />}
+      <Closing />
+      <Newsletter />
+      {PRESS.length > 0 && <Press />}
+    </>
+  )
+}
 
-      <section className="sec tight rule">
-        <div className="wrap">
-          <div className="row between" style={{ marginBottom: 32, alignItems: 'end' }}>
-            <h2 className="display">Provas 2027</h2>
-            <Link className="btn ghost" to="/provas">Todas as provas</Link>
-          </div>
-          <RaceTable />
-        </div>
-      </section>
+/* ---------- 1. abertura ---------- */
 
-      <section className="sec">
-        <div className="wrap">
-          <div className="split">
-            <h2 className="display">Dorme na aldeia</h2>
-            <div className="stack">
-              <p className="lede">
-                Aqui não há hotéis: há casas de família. No fim de semana da prova, gente das aldeias abre a porta a atletas e famílias.
-              </p>
-              <p>
-                Casas a {IMPACT.nightly} por noite, reservadas aqui. O valor fica com quem recebe.
-              </p>
-              <div className="row">
-                <Link className="btn" to="/alojamento">Ver casas</Link>
-                <Link className="btn ghost" to="/alojamento/anfitriao">Tenho uma casa</Link>
-              </div>
-            </div>
+function Hero() {
+  const price = currentPrice(MAIN)
+  const cta = primaryAction(price?.eur)
+  return (
+    <section className="hero" data-hero aria-labelledby="hero-t">
+      <Media slot="hero" className="hero-media" tone="night" eager />
+      <div className="wrap hero-inner">
+        <h1 className="hero-title" id="hero-t">
+          <HeroLettering />
+          <span className="hero-tagline">Shadows and Dust</span>
+        </h1>
+        <div className="hero-side">
+          <p className="hero-when">
+            <span>Sexta, 2 de julho de 2027</span> · <span>22:00</span> · <span>A-do-Pinto, Serpa</span>
+          </p>
+          <div className="hero-actions">
+            <Link className="btn ember" to={cta.to}>
+              {cta.label}
+            </Link>
+            <a className="btn ghost" href="#provas">
+              Ver as provas
+            </a>
           </div>
-          <div className="listings mt-l">
-            {LISTINGS.slice(0, 3).map((l) => (
-              <Link key={l.id} to={`/alojamento/${l.id}`} className="listing">
-                <div className="plate"><HousePlate listing={l} /></div>
-                <div className="row between mono">
-                  <span>{l.village}</span>
-                  <span>{l.eurNight} € / noite</span>
-                </div>
-                <h3>{l.title}</h3>
-              </Link>
-            ))}
+          <div className="hero-count">
+            <span>Partida do HELL160 em</span>
+            <Countdown to={EVENT.startISO} />
           </div>
-        </div>
-      </section>
-
-      <div className="villages" ref={stripRef} aria-label="Aldeias e pontos do percurso">
-        <div className="track">
-          {stops.map((w) => (
-            <span key={w.km} className={w.kind === 'life' ? 'base' : undefined}>
-              {w.name}
-              <i>km {w.km.toFixed(0)}</i>
-            </span>
-          ))}
         </div>
       </div>
+    </section>
+  )
+}
 
-      <section className="sec dust">
-        <div className="wrap split" style={{ alignItems: 'end' }}>
-          <h2 className="display">Apoiar a prova</h2>
-          <div className="stack">
-            <p className="lede">
-              Empresas e instituições podem patrocinar um desfibrilhador, os abastecimentos ou o alojamento nas aldeias.
-            </p>
-            <Link className="btn" to="/apoiar">Como apoiar</Link>
+/* ---------- 2. a causa ---------- */
+
+function Cause() {
+  return (
+    <section className="sec band-panel cause" aria-labelledby="causa-t">
+      <div className="wrap cause-grid">
+        <figure className="cause-frame">
+          <Media slot="causa" className="cause-media" sizes="(min-width: 1024px) 50vw, 100vw" />
+          <figcaption className="cause-over">
+            <span className="cause-num">2</span>
+            <span className="cause-cap">
+              desfibrilhadores já garantidos.
+              <br />
+              Objetivo: um em cada aldeia do percurso.
+            </span>
+          </figcaption>
+        </figure>
+        <div className="cause-text">
+          <h2 className="display" id="causa-t">
+            Corremos pelas aldeias
+          </h2>
+          <p className="lede">
+            Na margem esquerda do Guadiana, o hospital fica longe. Quando alguém tem uma paragem cardíaca, a ajuda que conta é a de quem está
+            perto.
+          </p>
+          <p>
+            O HELL160 é organizado para levar desfibrilhadores a estas aldeias e formar quem lá vive para os usar. Os aparelhos ficam instalados
+            depois de os atletas partirem, e a rede cresce a cada edição.
+          </p>
+          <div className="pill-row">
+            <Link className="btn" to="/causa">
+              A causa
+            </Link>
+            <Link className="btn ghost" to="/apoiar">
+              Apoiar
+            </Link>
           </div>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
+  )
+}
+
+/* ---------- 3. as provas ---------- */
+
+const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+// Datas de início e fim em hora local da prova (relógio de parede, sem fusos).
+function raceWindow(r: Race): { from: Date; to: Date } | null {
+  let from: Date | null = null
+  if (r.id === MAIN.id) {
+    const [d, t] = EVENT.startISO.split('T')
+    const [y, mo, da] = d.split('-').map(Number)
+    const [h, mi] = t.split(':').map(Number)
+    from = new Date(Date.UTC(y, mo - 1, da, h, mi))
+  } else {
+    const m = r.start.match(/(\d{1,2}) (\p{L}{3})\p{L}* (\d{4}) · (\d{2}):(\d{2})/u)
+    if (m && MONTHS.includes(m[2])) from = new Date(Date.UTC(+m[3], MONTHS.indexOf(m[2]), +m[1], +m[4], +m[5]))
+  }
+  if (!from) return null
+  return { from, to: new Date(from.getTime() + r.limitH * 36e5) }
+}
+
+const dm = (d: Date) => `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+
+function RaceDates({ race }: { race: Race }) {
+  const w = raceWindow(race)
+  if (!w) {
+    const label = race.start.split('·')[0].trim()
+    return (
+      <p className="rc-dates">
+        <span className="rc-d">
+          <b>{label}</b>
+          <i>data a anunciar</i>
+        </span>
+      </p>
+    )
+  }
+  return (
+    <p className="rc-dates">
+      <span className="rc-d">
+        <b>{dm(w.from)}</b>
+        <i>{w.from.getUTCFullYear()}</i>
+      </span>
+      <IconArrowRight size={20} className="rc-arrow" />
+      <span className="sr-only">a</span>
+      <span className="rc-d">
+        <b>{dm(w.to)}</b>
+        <i>{w.to.getUTCFullYear()}</i>
+      </span>
+    </p>
+  )
+}
+
+const statusTone = () => SITE.registration.status
+
+function RaceCard({ race }: { race: Race }) {
+  const price = currentPrice(race)
+  const provisional = race.id !== MAIN.id
+  const main = race.id === MAIN.id
+  return (
+    <article className={`rc${main ? ' rc--main' : ''}`}>
+      <Media slot={RACE_SLOT[race.id]} className="rc-media" sizes="(min-width: 1024px) 380px, 80vw" />
+      <span className="rc-big" aria-hidden="true">
+        {race.distanceKm.toLocaleString('pt-PT')}
+        <small>km</small>
+      </span>
+      <div className="rc-body">
+        <RaceDates race={race} />
+        <h3 className="rc-name">
+          <Link to={`/provas/${race.id}`} className="rc-link">
+            {race.name}
+          </Link>
+        </h3>
+        <p className={`rc-status is-${statusTone()}`}>{registrationLabel()}</p>
+        <ul className="rc-facts">
+          <li>
+            <IconRoute size={20} /> {race.distanceKm.toLocaleString('pt-PT')} km
+          </li>
+          <li>
+            <IconClimb size={20} /> {race.gainM.toLocaleString('pt-PT')} m D+
+          </li>
+          <li>
+            <IconClock size={20} /> {race.limitH} h de limite
+          </li>
+        </ul>
+        <p className="rc-price">{price ? <>desde {price.eur} €</> : 'Preço a anunciar'}</p>
+        {provisional && <p className="rc-note">Valores provisórios</p>}
+      </div>
+    </article>
+  )
+}
+
+function RacesRow() {
+  return (
+    <section className="sec races-home" id="provas" aria-labelledby="provas-t">
+      <div className="wrap">
+        <header className="sec-head">
+          <h2 className="display" id="provas-t">
+            As provas
+          </h2>
+          <div className="sec-head-text">
+            <p className="lede">
+              HELL160 e HELL100, a solo ou em equipa, no primeiro fim de semana de julho. A HELL100 Bike passa para fevereiro, longe do calor.
+            </p>
+          </div>
+        </header>
+      </div>
+      <Rail label="Provas 2027" className="rail--races">
+        {RACES.map((r) => (
+          <RaceCard key={r.id} race={r} />
+        ))}
+      </Rail>
+      <div className="wrap">
+        <Link className="btn ghost wide" to="/provas">
+          Comparar as provas
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+/* ---------- 6. dorme na aldeia ---------- */
+
+function Houses() {
+  const hosts = useCollection('hosts')
+  const list = allListings(hosts).slice(0, 8)
+  return (
+    <section className="sec houses" aria-labelledby="casas-t">
+      <div className="wrap">
+        <header className="sec-head">
+          <h2 className="display" id="casas-t">
+            Dorme na aldeia
+          </h2>
+          <div className="sec-head-text">
+            <p className="lede">Aqui não há hotéis. No fim de semana da prova, famílias das aldeias abrem a porta a atletas e a quem os acompanha.</p>
+            <p className="muted">Casas de exemplo enquanto recebemos as primeiras inscrições de anfitriões. O valor da noite fica com quem recebe.</p>
+          </div>
+        </header>
+      </div>
+      <Rail label="Casas nas aldeias" className="rail--houses">
+        {list.map((l) => (
+          <article key={l.id} className="hc">
+            <p className="hc-place">
+              <IconPin size={18} /> {l.village} · {l.kmToStart.toLocaleString('pt-PT')} km da partida
+            </p>
+            <h3 className="hc-name">
+              <Link to={`/alojamento/${l.id}`} className="hc-link">
+                {l.title}
+              </Link>
+            </h3>
+            <blockquote className="hc-note">
+              <p>«{l.note}»</p>
+              <footer>{l.host}</footer>
+            </blockquote>
+            <dl className="hc-facts">
+              <div>
+                <dt>Dormem</dt>
+                <dd>{l.sleeps} pessoas</dd>
+              </div>
+              <div>
+                <dt>Por noite</dt>
+                <dd>{l.eurNight} €</dd>
+              </div>
+            </dl>
+          </article>
+        ))}
+      </Rail>
+      <div className="wrap pill-row">
+        <Link className="btn" to="/alojamento">
+          Ver as casas
+        </Link>
+        <Link className="btn ghost" to="/alojamento/anfitriao">
+          Tenho uma casa
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+/* ---------- 7. território ---------- */
+
+function Territory() {
+  return (
+    <section className="terr" aria-labelledby="terr-t">
+      <div className="terr-map">
+        <TrailMap routes={[mapRoute('hell160')!]} height="var(--terr-map-h)" label="Mapa do percurso do HELL160 na margem esquerda do Guadiana" />
+      </div>
+      <div className="wrap terr-wrap">
+        <div className="terr-card">
+          <h2 className="terr-title" id="terr-t">
+            Margem esquerda do Guadiana
+          </h2>
+          <ul className="terr-facts">
+            <li>
+              <IconRoute size={20} /> <span>GR15 e GR15.2, circular a partir de <span className="nw">A-do-Pinto</span></span>
+            </li>
+            <li>
+              <IconPin size={20} /> <span>Pulo do Lobo, a garganta do Guadiana</span>
+            </li>
+            <li>
+              <IconMoon size={20} /> <span>Partida às 22:00, até duas noites em prova</span>
+            </li>
+          </ul>
+          <p>Estradões de terra, montado de azinho e sobro e as aldeias caiadas que ficam acordadas para ver passar quem ainda corre.</p>
+          <Link className="btn light" to="/territorio">
+            Ver o território
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ---------- 8. vídeo, testemunhos, fecho, imprensa (só com conteúdo real) ---------- */
+
+function EditionVideo() {
+  return (
+    <section className="sec video-band" aria-labelledby="video-t">
+      <div className="wrap">
+        <h2 className="display" id="video-t">
+          A prova em vídeo
+        </h2>
+        <VideoFacade slot="video-edicao" title={MEDIA['video-edicao'].alt} className="video-frame" />
+      </div>
+    </section>
+  )
+}
+
+function Testimonials() {
+  return (
+    <section className="sec band-panel" aria-labelledby="test-t">
+      <div className="wrap">
+        <h2 className="display" id="test-t">
+          Quem lá esteve
+        </h2>
+      </div>
+      <Rail label="Testemunhos" className="rail--tests">
+        {TESTIMONIALS.map((t) => (
+          <figure key={t.name} className="tc">
+            {t.src && <img src={mediaUrl(t.src)} alt={t.alt ?? ''} loading="lazy" decoding="async" />}
+            <blockquote>«{t.quote}»</blockquote>
+            <figcaption>
+              {t.name} · {t.role}
+            </figcaption>
+          </figure>
+        ))}
+      </Rail>
+    </section>
+  )
+}
+
+function Closing() {
+  return (
+    <section className="closing" aria-labelledby="fecho-t">
+      <Media slot="fecho" className="closing-media" tone="night" />
+      <div className="wrap closing-inner">
+        <h2 className="closing-title" id="fecho-t">
+          Pronto para a noite de 2 de julho?
+        </h2>
+        <Link className="btn light" to="/provas">
+          Ver todas as provas
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+function Press() {
+  return (
+    <section className="sec band-panel press" aria-labelledby="press-t">
+      <div className="wrap">
+        <h2 className="news-title" id="press-t">
+          O HELL160 na imprensa
+        </h2>
+        <ul className="press-list">
+          {PRESS.map((p) => (
+            <li key={p.href}>
+              <a href={p.href} target="_blank" rel="noreferrer">
+                <b>{p.outlet}</b> {p.title} <IconArrowUpRight size={18} />
+              </a>
+              {p.date && <span className="muted">{p.date}</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   )
 }

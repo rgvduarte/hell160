@@ -88,7 +88,7 @@ export function Cause() {
         </div>
       </section>
 
-      <section className="sec dust">
+      <section className="sec band-panel">
         <div className="wrap split">
           <h2 className="cond" style={{ fontSize: 'clamp(30px, 3.4vw, 46px)' }}>Segurança em prova</h2>
           <ul className="ticklist">

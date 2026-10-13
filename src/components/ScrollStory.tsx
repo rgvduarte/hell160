@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { ROUTE_KM, elevationAt } from '../data/route'
 import { ElevationProfile } from './Graphics'
 import { usePrefersReducedMotion, useStickyProgress } from '../lib/scroll'
+import { RACES, currentPrice } from '../data/event'
+import { primaryAction } from '../data/site'
 
 // "36 horas num scroll": o relógio da prova anda com o scroll, de sexta às 22:00 a domingo de manhã.
 // Narrativa de um atleta a meio da tabela; percurso, altimetria e temperaturas são esquemáticos.
@@ -18,10 +20,10 @@ const BEATS = [
   { at: 0.88, kicker: 'Meta', text: 'A-do-Pinto outra vez, domingo de manhã. Na aldeia ninguém pergunta o tempo, perguntam se chegaste.' },
 ]
 
-// cor do céu por hora do dia (0–24)
+// cor do céu por hora do dia (0–24): noite preta, madrugada e pôr do sol a brasa escura, dia no cinzento claro do site
 const SKY: [number, string][] = [
-  [0, '#0f0d0b'], [5, '#141110'], [6.3, '#4a2a1e'], [7.5, '#b7896a'], [9, '#e5ddcf'],
-  [13, '#e9d9bd'], [16, '#e3c79c'], [18.8, '#c98f6a'], [20.2, '#5a2c1d'], [21.3, '#171310'], [24, '#0f0d0b'],
+  [0, '#000000'], [5, '#111111'], [6.3, '#4a1c10'], [7.5, '#a9a6a1'], [9, '#e6e4e0'],
+  [13, '#f3f2f0'], [16, '#ecebe8'], [18.8, '#b9b5ae'], [20.2, '#4a1c10'], [21.3, '#111111'], [24, '#000000'],
 ]
 
 const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
@@ -56,10 +58,16 @@ function clock(p: number) {
   return { day, hm: `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`, hour: m / 60 }
 }
 
+// Números tabulares (não saltam com o scroll), mas com a vírgula e os dois pontos proporcionais.
+function Tn({ v }: { v: string }) {
+  return <>{v.split(/([,:.])/).map((part, i) => (/^[,:.]$/.test(part) ? <span key={i} className="np">{part}</span> : part))}</>
+}
+
 export function ScrollStory() {
   const ref = useRef<HTMLElement>(null)
   const reduced = usePrefersReducedMotion()
   const p = useStickyProgress(ref, !reduced)
+  const cta = primaryAction(currentPrice(RACES[0])?.eur)
 
   if (reduced) return <StoryStatic />
 
@@ -93,10 +101,10 @@ export function ScrollStory() {
             </p>
             <div className="story-clock" aria-live="off">
               <span className="mono">{day}</span>
-              <b>{hm}</b>
+              <b><Tn v={hm} /></b>
             </div>
             <dl className="story-data mono">
-              <div><dt>km</dt><dd>{km.toFixed(1)}</dd></div>
+              <div><dt>km</dt><dd><Tn v={km.toLocaleString('pt-PT', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} /></dd></div>
               <div><dt>altitude</dt><dd>{elevationAt(km)} m</dd></div>
               <div><dt>temperatura</dt><dd>{tempAt(hour)} °C</dd></div>
             </dl>
@@ -108,7 +116,7 @@ export function ScrollStory() {
               </p>
             ))}
             <div className={`story-cta${p > 0.93 ? ' on' : ''}`}>
-              <Link className="btn ember" to="/inscricao" tabIndex={p > 0.93 ? 0 : -1}>Inscrever na edição 2027</Link>
+              <Link className="btn ember" to={cta.to} tabIndex={p > 0.93 ? 0 : -1}>{cta.label}</Link>
             </div>
           </div>
         </div>
@@ -125,7 +133,7 @@ function StoryStatic() {
   return (
     <section className="sec night">
       <div className="wrap">
-        <p className="eyebrow">A prova em 36 horas</p>
+        <h2 className="display story-static-t">A prova em 36 horas</h2>
         <ol className="numlist">
           {BEATS.map((b) => (
             <li key={b.kicker}>

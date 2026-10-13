@@ -1,43 +1,5 @@
-/* Scroll: um momento autoral (a prova em 36 horas) e dois apoios discretos (pôr do sol, aldeias).
-   Só transform/opacity; com prefers-reduced-motion tudo fica estático (ver fim do ficheiro). */
-
-/* ---------- hero: o sol põe-se quando se sai do hero ---------- */
-.hero .sun {
-  transform: translate3d(0, calc(var(--sy, 0) * 0.55px), 0) scale(calc(1 + var(--sy, 0) * 0.0004));
-  will-change: transform;
-}
-.hero h1 { transform: translate3d(0, calc(var(--sy, 0) * -0.12px), 0); }
-.hero .contours { transform: translate3d(0, calc(var(--sy, 0) * 0.2px), 0); }
-
-/* ---------- aldeias: faixa que anda com o scroll (não em loop automático) ---------- */
-.villages {
-  overflow: hidden;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  padding: 22px 0;
-  white-space: nowrap;
-}
-.villages .track {
-  display: inline-flex;
-  gap: 56px;
-  padding-left: 8vw;
-  transform: translate3d(calc(var(--sp, 0) * -55%), 0, 0);
-  will-change: transform;
-}
-.villages span {
-  font: 800 clamp(26px, 3.4vw, 46px) / 1 var(--display);
-  font-variation-settings: 'wdth' 70;
-  text-transform: uppercase;
-}
-.villages span i {
-  font: 500 12px var(--mono);
-  font-style: normal;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  vertical-align: top;
-  margin-left: 8px;
-}
-.villages span.base { color: var(--ember); }
+/* Scroll: o único momento autoral do site, a prova em 36 horas.
+   Só transform/opacity e a cor do céu; com prefers-reduced-motion mostra-se a versão estática (ScrollStory.tsx). */
 
 /* ---------- a prova em 36 horas ---------- */
 .story {
@@ -46,10 +8,10 @@
   background: var(--sky);
 }
 .story.is-dark {
-  --bg: var(--sky); --fg: var(--chalk); --muted: rgba(239, 233, 223, 0.62); --line: rgba(239, 233, 223, 0.16);
+  --bg: var(--sky); --fg: #fff; --muted: rgba(255, 255, 255, 0.66); --line: rgba(255, 255, 255, 0.16);
 }
 .story.is-light {
-  --bg: var(--sky); --fg: var(--ink); --muted: rgba(21, 18, 15, 0.6); --line: rgba(21, 18, 15, 0.16);
+  --bg: var(--sky); --fg: var(--ink); --muted: rgba(17, 17, 17, 0.64); --line: rgba(17, 17, 17, 0.16);
 }
 .story-pin {
   position: sticky;
@@ -63,7 +25,7 @@
   transition: color 300ms ease-out;
 }
 .story-bar {
-  position: absolute; left: 0; right: 0; top: 64px; height: 3px;
+  position: absolute; left: 0; right: 0; top: var(--nav-h); height: 3px;
   background: var(--ember); transform-origin: 0 50%; z-index: 2;
 }
 .story-orb {
@@ -80,7 +42,7 @@
 .story-orb.moon {
   width: clamp(48px, 6vw, 96px);
   background: transparent;
-  box-shadow: inset clamp(-14px, -1.6vw, -8px) clamp(-8px, -0.8vw, -4px) 0 0 var(--chalk);
+  box-shadow: inset clamp(-14px, -1.6vw, -8px) clamp(-8px, -0.8vw, -4px) 0 0 #fff;
   opacity: 0.85;
 }
 .story-grid {
@@ -107,7 +69,7 @@
 .story-data dd { margin: 0; font-size: clamp(20px, 2.2vw, 30px); font-variant-numeric: tabular-nums; }
 .story-text { position: relative; min-height: 9.5em; }
 .story-beat {
-  position: absolute; left: 0; right: 0; bottom: 64px; margin: 0;
+  position: absolute; left: 0; right: 0; bottom: 80px; margin: 0;
   font: 400 clamp(21px, 2.1vw, 30px) / 1.32 var(--sans);
   max-width: 26ch;
   opacity: 0; transform: translateY(-10px);
@@ -134,9 +96,9 @@
   .story-grid { grid-template-columns: 1fr; align-items: start; padding-top: 96px; gap: 8px; }
   .story-clock b { font-size: 22vw; }
   .story-data { margin-top: 16px; }
-  .story-text { min-height: 8.5em; }
+  .story-text { min-height: 204px; }
   .story-beat { bottom: auto; top: 0; font-size: 19px; }
-  .story-cta { bottom: auto; top: 6.2em; }
+  .story-cta { top: auto; bottom: 0; }
   .story-orb { left: calc(50% + var(--k, 0) * 40%); top: calc(46.5% - var(--sin, 0) * 6%); }
   .story-orb.sun { width: 18vw; }
   .story-orb.moon { width: 11vw; }
@@ -144,14 +106,8 @@
   .story-profile .profile .tick { display: none; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hero .sun, .hero h1, .hero .contours, .villages .track { transform: none !important; }
-  .villages { overflow-x: auto; }
-}
 
 /* tipografia Schibsted */
-.villages span { font: 800 clamp(26px, 3.4vw, 46px) / 1 var(--display); font-variation-settings: normal; text-transform: none; letter-spacing: -0.03em; }
-.villages span i { font: 500 13px var(--sans); letter-spacing: 0; }
 .story-kicker { font: 600 15px var(--sans); text-transform: none; letter-spacing: 0; }
 .story-clock .mono { font: 500 15px var(--sans); text-transform: none; letter-spacing: 0; }
 .story-clock b { font: 700 clamp(76px, 13vw, 200px) / 0.85 var(--display); letter-spacing: -0.05em; font-variant-numeric: tabular-nums; }
@@ -159,3 +115,6 @@
 .story-data dd { font-family: var(--sans); font-weight: 600; }
 .story-note { font: 500 13px var(--sans); text-transform: none; letter-spacing: 0; }
 @media (max-width: 760px) { .story-clock b { font-size: 22vw; } }
+
+/* versão estática (movimento reduzido) */
+.story-static-t { margin-bottom: 40px; font-size: clamp(40px, 7.4vw, 88px); }

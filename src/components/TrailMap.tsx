@@ -13,10 +13,10 @@ export type MapRoute = { id: string; url: string; color?: string; width?: number
 export type MapMarker = { lngLat: [number, number]; label: string; kind?: 'start' | 'aid' | 'life' | 'poi' }
 
 const TONES = {
-  land: '#efeeea',
+  land: '#f3f2f0',
   water: '#b9c9cf',
-  line: '#c8c2b8',
-  ink: '#15120f',
+  line: '#c4c2be',
+  ink: '#111111',
   ember: '#c8361b',
 }
 
@@ -74,9 +74,20 @@ export function TrailMap({
   const el = useRef<HTMLDivElement>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'fallback' | 'error'>('loading')
   const [missing, setMissing] = useState<string[]>([])
+  const [near, setNear] = useState(false)
+
+  // O MapLibre (≈ 250 kB) só carrega quando o mapa está perto do ecrã.
+  useEffect(() => {
+    const node = el.current
+    if (!node || near) return
+    if (typeof IntersectionObserver === 'undefined') return setNear(true)
+    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && setNear(true), { rootMargin: '600px 0px' })
+    io.observe(node)
+    return () => io.disconnect()
+  }, [near])
 
   useEffect(() => {
-    if (!el.current) return
+    if (!el.current || !near) return
     const ctrl = new AbortController()
     let map: MLMap | null = null
     let cancelled = false
@@ -158,7 +169,7 @@ export function TrailMap({
       map?.remove()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(routes), JSON.stringify(markers)])
+  }, [near, JSON.stringify(routes), JSON.stringify(markers)])
 
   return (
     <div className="trailmap" style={{ height }} role="region" aria-label={label}>

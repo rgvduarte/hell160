@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { TrailMap } from '../components/TrailMap'
+import { Media } from '../components/Media'
 import { mapRoute } from '../data/routes'
-import { Contours } from '../components/Graphics'
 
 const PLACES = [
   ['A-do-Pinto', 'Partida e meta. A aldeia que organiza e que abre as portas.'],
@@ -14,46 +14,53 @@ const PLACES = [
 export function Territory() {
   return (
     <>
-      <section className="sec tight" style={{ overflow: 'hidden' }}>
-        <Contours seed={11} />
-        <div className="wrap split" style={{ position: 'relative', alignItems: 'end' }}>
-          <div>
-            <p className="eyebrow">Território</p>
-            <h1 className="display" style={{ fontSize: 'clamp(48px, 8vw, 120px)' }}>Margem esquerda</h1>
-          </div>
+      <section className="page-hero" aria-labelledby="terr-h">
+        <Media slot="territorio" tone="night" eager />
+        <div className="wrap">
+          <h1 className="display" id="terr-h">
+            Margem esquerda
+          </h1>
           <p className="lede">
-            O lado do Guadiana que fica para lá do rio, para quem vem de Lisboa. Montado, planície, aldeias brancas e um calor que não
-            pede desculpa.
+            O lado do Guadiana que fica para lá do rio, para quem vem de Lisboa. Montado, planície, aldeias brancas e um calor que não pede
+            desculpa.
           </p>
         </div>
       </section>
-      <section className="sec tight rule">
+      <section className="sec tight">
         <div className="wrap split">
           <ol className="numlist">
             {PLACES.map(([n, t]) => (
-              <li key={n}><div><h3 className="cond">{n}</h3><p className="muted">{t}</p></div></li>
+              <li key={n}>
+                <div>
+                  <h2 className="cond">{n}</h2>
+                  <p className="muted">{t}</p>
+                </div>
+              </li>
             ))}
           </ol>
           <div>
-            <TrailMap routes={[mapRoute('hell160')!]} height={560} label="Mapa do território e do percurso do HELL160" />
-            <p className="mono muted mt-s">GR15 e GR15.2 · margem esquerda do Guadiana</p>
+            <div className="map-frame">
+              <TrailMap routes={[mapRoute('hell160')!]} height={560} label="Mapa do território e do percurso do HELL160" />
+            </div>
+            <p className="muted mt-s">GR15 e GR15.2 · margem esquerda do Guadiana</p>
           </div>
         </div>
       </section>
-      <section className="sec dust">
+      <section className="sec band-panel">
         <div className="wrap split">
-          <div>
-            <p className="eyebrow">Para quem acompanha</p>
-            <h2 className="cond" style={{ fontSize: 'clamp(32px, 4vw, 52px)' }}>Ver passar</h2>
-          </div>
+          <h2 className="display">Ver passar</h2>
           <div className="stack">
-            <p>
-              As aldeias do percurso são os melhores sítios para apoiar. Com o live consegues saber a que horas o teu atleta passa em cada
-              uma — e chegar antes dele.
+            <p className="lede">
+              As aldeias do percurso são os melhores sítios para apoiar. Com o live sabes a que horas o teu atleta passa em cada uma, e chegas
+              antes dele.
             </p>
-            <div className="row">
-              <Link className="btn" to="/live">Live</Link>
-              <Link className="btn ghost" to="/alojamento">Dormir na aldeia</Link>
+            <div className="pill-row">
+              <Link className="btn" to="/live">
+                Seguir no live
+              </Link>
+              <Link className="btn ghost" to="/alojamento">
+                Dormir na aldeia
+              </Link>
             </div>
           </div>
         </div>

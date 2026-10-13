@@ -3,9 +3,15 @@ import { Lockup, Mark, MarkSmall } from '../components/Logo'
 const BASE = import.meta.env.BASE_URL
 
 const COLORS = [
-  ['Cal', '#EFE9DF', 'Os números do dorsal, o fundo claro'],
-  ['Brasa', '#C8361B', 'O campo do 160. Uma vez por ecrã'],
-  ['Sombra', '#15120F', 'A faixa do HELL, o texto, a noite'],
+  ['Cal', '#EFE9DF', 'Os números do dorsal'],
+  ['Brasa', '#C8361B', 'O campo do 160 e a ação principal. Uma vez por ecrã'],
+  ['Sombra', '#15120F', 'A faixa do HELL'],
+] as const
+
+const SITE_COLORS = [
+  ['Branco', '#FFFFFF', 'Fundo das páginas'],
+  ['Painel', '#F3F2F0', 'Painéis e faixas claras'],
+  ['Tinta', '#111111', 'Texto, botões, secções de noite'],
 ] as const
 
 const FILES = [
@@ -57,7 +63,7 @@ export function Brand() {
       <section className="night">
         <div className="wrap" style={{ padding: '72px var(--gutter)' }}>
           <Lockup height={88} />
-          <p className="mono muted mt-s">Sobre fundo escuro o HELL passa a cal; a caixa do 160 não muda</p>
+          <p className="mono muted mt-s">Sobre fundo escuro o HELL passa a branco; a caixa do 160 não muda</p>
         </div>
       </section>
 
@@ -71,8 +77,20 @@ export function Brand() {
             <li>Uma cor só (carimbo, gravação, bordado): tudo a sombra, com os números vazados.</li>
           </ul>
 
-          <div className="brand-colors mt-l">
+          <h2 className="cond mt-l" style={{ fontSize: 'clamp(28px, 3vw, 40px)' }}>Cores do dorsal</h2>
+          <div className="brand-colors mt-s">
             {COLORS.map(([n, hex, use]) => (
+              <div key={n}>
+                <div style={{ background: hex, height: 120 }} />
+                <p style={{ margin: '12px 0 0' }}><strong>{n}</strong> <span className="mono muted">{hex}</span></p>
+                <p className="muted" style={{ fontSize: 14, margin: '4px 0 0' }}>{use}</p>
+              </div>
+            ))}
+          </div>
+
+          <h2 className="cond mt-l" style={{ fontSize: 'clamp(28px, 3vw, 40px)' }}>Cores do site</h2>
+          <div className="brand-colors mt-s">
+            {SITE_COLORS.map(([n, hex, use]) => (
               <div key={n}>
                 <div style={{ background: hex, height: 120 }} />
                 <p style={{ margin: '12px 0 0' }}><strong>{n}</strong> <span className="mono muted">{hex}</span></p>

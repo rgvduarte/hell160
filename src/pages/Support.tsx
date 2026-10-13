@@ -47,7 +47,7 @@ export function Support() {
             {WAYS.map(([t, d]) => (
               <li key={t}>
                 <div>
-                  <h3 className="cond">{t}</h3>
+                  <h2 className="cond">{t}</h2>
                   <p className="muted">{d}</p>
                 </div>
               </li>
