@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { EVENT } from '../data/event'
 import { Lockup, Wordmark } from './Logo'
 import { Contours } from './Graphics'
+import { useReveal } from '../lib/scroll'
 
 const LINKS = [
   ['/provas', 'Provas'],
@@ -16,6 +17,7 @@ const LINKS = [
 export function Layout() {
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
+  useReveal(pathname)
   useEffect(() => {
     setOpen(false)
     window.scrollTo(0, 0)

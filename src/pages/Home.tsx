@@ -1,16 +1,26 @@
+import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { EVENT, IMPACT, RACES, currentPrice } from '../data/event'
 import { LISTINGS } from '../data/listings'
-import { Contours, Countdown, ElevationProfile } from '../components/Graphics'
+import { Contours, Countdown } from '../components/Graphics'
+import { ScrollStory } from '../components/ScrollStory'
+import { WAYPOINTS } from '../data/route'
+import { usePrefersReducedMotion, useScrollVars } from '../lib/scroll'
 import { HousePlate } from '../components/HousePlate'
 import { RaceTable } from './Races'
 
 export function Home() {
   const main = RACES[0]
   const price = currentPrice(main)
+  const reduced = usePrefersReducedMotion()
+  const heroRef = useRef<HTMLElement>(null)
+  const stripRef = useRef<HTMLDivElement>(null)
+  useScrollVars(heroRef, !reduced)
+  useScrollVars(stripRef, !reduced)
+  const stops = WAYPOINTS.filter((w, i, a) => !w.name.startsWith('Abastecimento') && a.findIndex((x) => x.name === w.name) === i)
   return (
     <>
-      <section className="hero">
+      <section className="hero" ref={heroRef}>
         <Contours seed={3} />
         <div className="wrap">
           <div className="meta mono">
@@ -83,6 +93,8 @@ export function Home() {
         </div>
       </section>
 
+      <ScrollStory />
+
       <section className="sec tight rule">
         <div className="wrap">
           <div className="row between" style={{ marginBottom: 32, alignItems: 'end' }}>
@@ -93,32 +105,6 @@ export function Home() {
             <Link className="btn ghost" to="/provas">Todas as provas</Link>
           </div>
           <RaceTable />
-        </div>
-      </section>
-
-      <section className="sec night">
-        <Contours seed={19} />
-        <div className="wrap" style={{ position: 'relative' }}>
-          <div className="split">
-            <div>
-              <p className="eyebrow">22:00 · sexta-feira</p>
-              <h2 className="display">Parte-se no escuro</h2>
-            </div>
-            <div className="stack">
-              <p className="lede">
-                A partida noturna poupa as primeiras horas ao sol — e entrega a segunda noite a quem ainda estiver em prova.
-              </p>
-              <p className="muted">
-                Cada atleta leva telemóvel com a app HELL160 e, se quiser, um relógio emparelhado. As duas fontes cruzam-se: se uma falha, a
-                outra continua a dar posição. Um botão de SOS liga diretamente à equipa de resgate mais próxima.
-              </p>
-              <Link className="btn ember" to="/live">Ver o live (simulação)</Link>
-            </div>
-          </div>
-          <div className="mt-l">
-            <ElevationProfile height={200} />
-            <p className="mono muted mt-s">Perfil esquemático · ◆ bases de vida em vermelho</p>
-          </div>
         </div>
       </section>
 
@@ -159,13 +145,14 @@ export function Home() {
         </div>
       </section>
 
-      <div className="marquee" aria-hidden>
-        <div>
-          {[0, 1].map((k) =>
-            ['A-do-Pinto', 'Vale de Vargo', 'Vila Verde de Ficalho', 'Pias', 'Vila Nova de São Bento', 'Serpa', 'Pulo do Lobo', 'Brinches', 'Santa Iria'].map((v) => (
-              <span key={k + v}>{v}</span>
-            )),
-          )}
+      <div className="villages" ref={stripRef} aria-label="Aldeias e pontos do percurso">
+        <div className="track">
+          {stops.map((w) => (
+            <span key={w.km} className={w.kind === 'life' ? 'base' : undefined}>
+              {w.name}
+              <i>km {w.km.toFixed(0)}</i>
+            </span>
+          ))}
         </div>
       </div>
 

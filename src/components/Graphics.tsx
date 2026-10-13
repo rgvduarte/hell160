@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { PROFILE, ROUTE_KM, WAYPOINTS } from '../data/route'
 
 function rng(seed: number) {
@@ -83,10 +83,12 @@ export function ElevationProfile({
   height = 180,
   marks = true,
   progressKm,
+  marker = false,
 }: {
   height?: number
   marks?: boolean
   progressKm?: number
+  marker?: boolean
 }) {
   const W = 1000
   const H = height
@@ -96,11 +98,12 @@ export function ElevationProfile({
   const y = (e: number) => H - 24 - ((e - min) / (max - min)) * (H - 44)
   const line = PROFILE.map((p, i) => `${i ? 'L' : 'M'}${x(p.km).toFixed(1)},${y(p.ele).toFixed(1)}`).join('')
   const area = `${line}L${W},${H - 24}L0,${H - 24}Z`
+  const clipId = `done-${useId().replace(/:/g, '')}`
 
   return (
     <svg className="profile" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="Perfil altimétrico esquemático do HELL160">
       <defs>
-        <clipPath id="done">
+        <clipPath id={clipId}>
           <rect x="0" y="0" width={progressKm != null ? x(progressKm) : 0} height={H} />
         </clipPath>
       </defs>
@@ -114,7 +117,17 @@ export function ElevationProfile({
       ))}
       <path d={area} className="area" />
       <path d={line} className="line" vectorEffect="non-scaling-stroke" />
-      {progressKm != null && <path d={area} className="area-done" clipPath="url(#done)" />}
+      {progressKm != null && <path d={area} className="area-done" clipPath={`url(#${clipId})`} />}
+      {marker && progressKm != null && (
+        <line
+          x1={x(progressKm)}
+          x2={x(progressKm)}
+          y1={8}
+          y2={H - 24}
+          className="marker"
+          vectorEffect="non-scaling-stroke"
+        />
+      )}
       {marks &&
         WAYPOINTS.slice(1, -1).map((w) => (
           <line
