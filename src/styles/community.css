@@ -11,7 +11,7 @@
 .field textarea.cm-textarea { resize: vertical; min-height: 84px; font: 400 17px/1.4 var(--sans); }
 
 /* ---------- segurança: progresso dos compromissos ---------- */
-.cm-progress { margin: 0; }
+.cm-progress { margin-inline: 0; margin-bottom: 0; }
 .cm-progress .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .cm-progress .head b { font: 800 clamp(28px, 3.2vw, 44px)/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 .cm-cells { display: grid; grid-template-columns: repeat(var(--n, 8), 1fr); gap: 4px; margin-top: 14px; }

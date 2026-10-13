@@ -1,13 +1,14 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useState, type ChangeEvent, type FormEvent, type MouseEvent } from 'react'
 import { flushSync } from 'react-dom'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EVENT, MANDATORY_GEAR, RACES, raceById, type Race } from '../data/event'
 import { EVENT_NIGHTS } from '../data/listings'
 import { HousePlate } from '../components/HousePlate'
 import { PaymentPanel } from '../components/PaymentPanel'
-import { download, eur, findListing, raceICS } from '../lib/domain'
+import { download, eur, findListing, raceICS, takenNights } from '../lib/domain'
 import {
   getAll,
+  getSessionEmail,
   sameEmail,
   setSessionEmail,
   update,
@@ -36,6 +37,8 @@ const RACE_START: Partial<Record<Race['id'], string>> = {
   relay2: '2027-07-03T08:00:00+01:00',
   relay4: '2027-07-03T08:00:00+01:00',
 }
+// A bike é em fevereiro de 2027 (dia a anunciar): até ao fim do mês é a primeira prova do calendário.
+const BIKE_MONTH_END = '2027-03-01T00:00:00Z'
 
 // Proposta para o regulamento 2027 (ainda não publicado).
 const REFUND_TIERS = [
@@ -86,8 +89,17 @@ const fmtMoney = (n: number) =>
   `${n.toLocaleString('pt-PT', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })} €`
 const fmtBytes = (n: number) =>
   n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toLocaleString('pt-PT', { maximumFractionDigits: 1 })} MB`
+// Acima do limite arredonda para cima, para nunca mostrar "5 MB" num ficheiro que passa dos 5 MB.
+const fmtMbUp = (n: number) => `${(Math.ceil((n / 1024 / 1024) * 10) / 10).toLocaleString('pt-PT', { maximumFractionDigits: 1 })} MB`
+// Números PT-PT com separador de milhares também em 4 dígitos (2 648, não 2648).
+const NUM = new Intl.NumberFormat('pt-PT', { useGrouping: 'always', maximumFractionDigits: 1 } as unknown as Intl.NumberFormatOptions)
+const fmtNum = (n: number) => NUM.format(n)
 const newestFirst = <T extends { createdAt: string }>(a: T, b: T) => b.createdAt.localeCompare(a.createdAt)
 const nightLabel = (iso: string) => EVENT_NIGHTS.find((n) => n.iso === iso)?.label ?? iso
+const nightList = (isos: string[]) => {
+  const l = [...isos].sort().map(nightLabel)
+  return l.length > 1 ? `${l.slice(0, -1).join(', ')} e ${l[l.length - 1]}` : l[0] ?? ''
+}
 
 function daysUntil(iso: string, now = new Date()) {
   return Math.ceil((new Date(iso).getTime() - now.getTime()) / 86_400_000)
@@ -104,6 +116,8 @@ function refundFor(reg: Registration, now = new Date()) {
 // ---------- entrada ----------
 
 type LoginCheck = { ok: true; email: string } | { ok: false; error: string; field: 'email' | 'ref' }
+
+const fieldId = (field: 'email' | 'ref') => (field === 'email' ? 'acc-email' : 'acc-ref')
 
 function checkLogin(emailRaw: string, refRaw: string, data: Collections): LoginCheck {
   const email = emailRaw.trim()
@@ -135,41 +149,94 @@ export function Account() {
   const [form, setForm] = useState({ email: '', ref: '' })
   const [error, setError] = useState<{ msg: string; field: 'email' | 'ref' } | null>(null)
   const [linkError, setLinkError] = useState<string | null>(null)
+  // Link só com email de outra pessoa quando já há sessão aberta
+  const [switchTo, setSwitchTo] = useState<string | null>(null)
+  // Elemento a focar depois do próximo render (campo com erro, título da área pessoal)
+  const [focusId, setFocusId] = useState<string | null>(null)
 
-  // Link direto /conta?email=…&ref=… (enviado pela inscrição e pela reserva)
+  useEffect(() => {
+    if (!focusId) return
+    document.getElementById(focusId)?.focus()
+    setFocusId(null)
+  }, [focusId, session])
+
+  // Links diretos:
+  // /conta?email=…&ref=…  enviado pela inscrição e pela reserva: entra se o par corresponder
+  // /conta?email=…        aviso de inscrição duplicada: só pré-preenche o email
   useEffect(() => {
     if (qEmail == null && qRef == null) return
-    const res = checkLogin(qEmail ?? '', qRef ?? '', getAll())
-    if (res.ok) {
-      setSessionEmail(res.email)
-      setLinkError(null)
-      setError(null)
-    } else {
-      setForm({ email: qEmail ?? '', ref: qRef ?? '' })
-      setError({ msg: res.error, field: res.field })
-      setLinkError(`O link de acesso não é válido. ${res.error}`)
-    }
     setParams({}, { replace: true })
+    const email = (qEmail ?? '').trim()
+    const ref = (qRef ?? '').trim()
+    const current = getSessionEmail()
+
+    if (email && ref) {
+      const res = checkLogin(email, ref, getAll())
+      if (res.ok) {
+        setLinkError(null)
+        setError(null)
+        setSwitchTo(null)
+        setSessionEmail(res.email)
+        setFocusId('acc-title')
+      } else {
+        setForm({ email, ref })
+        setError({ msg: res.error, field: res.field })
+        setLinkError(`O link de acesso não é válido. ${res.error}`)
+        if (!current) setFocusId(fieldId(res.field))
+      }
+      return
+    }
+
+    // Link incompleto: não é um erro. Com sessão aberta no mesmo email, ignora-se.
+    if (current) {
+      if (email && !sameEmail(email, current)) setSwitchTo(email)
+      return
+    }
+    setError(null)
+    setLinkError(null)
+    setForm({ email, ref })
+    setFocusId(email ? 'acc-ref' : 'acc-email')
   }, [qEmail, qRef, setParams])
 
   function login(e: FormEvent) {
     e.preventDefault()
     const res = checkLogin(form.email, form.ref, getAll())
-    if (!res.ok) return setError({ msg: res.error, field: res.field })
+    if (!res.ok) {
+      setError({ msg: res.error, field: res.field })
+      setFocusId(fieldId(res.field))
+      return
+    }
     setError(null)
     setLinkError(null)
+    setSwitchTo(null)
     setSessionEmail(res.email)
+    setFocusId('acc-title')
   }
 
-  function logout() {
-    setForm({ email: '', ref: '' })
+  function logout(prefill = '') {
+    setForm({ email: prefill, ref: '' })
     setError(null)
     setLinkError(null)
+    setSwitchTo(null)
     setSessionEmail(null)
+    setFocusId(prefill ? 'acc-ref' : 'acc-email')
   }
 
   if (session)
-    return <Dashboard email={session} data={data} linkError={linkError} onDismiss={() => setLinkError(null)} onLogout={logout} />
+    return (
+      <Dashboard
+        email={session}
+        data={data}
+        linkError={linkError}
+        switchTo={switchTo}
+        onDismiss={() => {
+          setLinkError(null)
+          setSwitchTo(null)
+        }}
+        onSwitch={() => switchTo && logout(switchTo)}
+        onLogout={() => logout()}
+      />
+    )
 
   return (
     <section className="sec tight acc-page no-reveal">
@@ -236,11 +303,13 @@ export function Account() {
 
 // ---------- área pessoal ----------
 
-function Dashboard({ email, data, linkError, onDismiss, onLogout }: {
+function Dashboard({ email, data, linkError, switchTo, onDismiss, onSwitch, onLogout }: {
   email: string
   data: Collections
   linkError: string | null
+  switchTo: string | null
   onDismiss: () => void
+  onSwitch: () => void
   onLogout: () => void
 }) {
   const [printId, setPrintId] = useState<string | null>(null)
@@ -248,12 +317,17 @@ function Dashboard({ email, data, linkError, onDismiss, onLogout }: {
   const books = data.bookings.filter((b) => sameEmail(b.email, email)).sort(newestFirst)
   const first = regs[0]?.first.trim() || books[0]?.name.trim().split(/\s+/)[0] || ''
   const active = regs.filter((r) => r.status !== 'cancelada')
-  const activeBooks = books.filter((b) => b.status === 'pedido' || b.status === 'confirmado')
+  // Pedidos que já não podem ser confirmados (casa fora da plataforma, noites ocupadas) não contam como ativos
+  const activeBooks = books.filter(
+    (b) => b.status === 'confirmado' || (b.status === 'pedido' && !bookingIssue(b, data.hosts, data.bookings)),
+  )
 
-  const nextStart = active
-    .map((r) => RACE_START[r.race as Race['id']])
-    .filter((s): s is string => !!s)
-    .sort()[0]
+  // Próxima prova: a bike (fevereiro, dia a anunciar) vem antes das provas de julho
+  const bikeFirst = active.some((r) => r.race === 'bike') && Date.now() < Date.parse(BIKE_MONTH_END)
+  const next = active
+    .map((r) => ({ race: raceById(r.race), start: RACE_START[r.race as Race['id']] }))
+    .filter((x): x is { race: Race; start: string } => !!x.race && !!x.start)
+    .sort((a, b) => a.start.localeCompare(b.start))[0]
 
   useEffect(() => {
     const clear = () => setPrintId(null)
@@ -279,10 +353,22 @@ function Dashboard({ email, data, linkError, onDismiss, onLogout }: {
                 <button className="btn small ghost noarrow" onClick={onDismiss}>Fechar</button>
               </div>
             )}
+            {!linkError && switchTo && (
+              <div className="notice acc-linkerr" role="status">
+                <span>
+                  O link que abriste é para <strong className="acc-email">{switchTo}</strong>. Tens sessão aberta com{' '}
+                  <span className="acc-email">{email}</span>.
+                </span>
+                <span className="row" style={{ gap: 8 }}>
+                  <button className="btn small noarrow" onClick={onSwitch}>Sair e entrar com esse email</button>
+                  <button className="btn small ghost noarrow" onClick={onDismiss}>Manter sessão</button>
+                </span>
+              </div>
+            )}
             <div className="acc-head">
               <div>
                 <p className="eyebrow">Área do atleta</p>
-                <h1 className="display acc-hello">{first ? `Olá, ${first}.` : 'Olá.'}</h1>
+                <h1 id="acc-title" tabIndex={-1} className="display acc-hello">{first ? `Olá, ${first}.` : 'Olá.'}</h1>
               </div>
               <div className="acc-who">
                 <span className="mono muted">Sessão</span>
@@ -294,10 +380,10 @@ function Dashboard({ email, data, linkError, onDismiss, onLogout }: {
               <div><b>{active.length}</b><span>{active.length === 1 ? 'Inscrição ativa' : 'Inscrições ativas'}</span></div>
               <div><b>{activeBooks.length}</b><span>{activeBooks.length === 1 ? 'Reserva ativa' : 'Reservas ativas'}</span></div>
               <div>
-                {nextStart ? (
-                  <><b>{Math.max(0, daysUntil(nextStart))}</b><span>Dias até à partida</span></>
-                ) : active.length > 0 ? (
-                  <><b>fev</b><span>Bike · dia a anunciar</span></>
+                {bikeFirst ? (
+                  <><b>fev</b><span>Próxima prova: {raceById('bike')?.name}, dia a anunciar</span></>
+                ) : next ? (
+                  <><b>{Math.max(0, daysUntil(next.start))}</b><span>Dias até à partida · {next.race.name}</span></>
                 ) : (
                   <><b>{Math.max(0, daysUntil(EVENT.startISO))}</b><span>Dias até ao HELL160</span></>
                 )}
@@ -335,7 +421,7 @@ function Dashboard({ email, data, linkError, onDismiss, onLogout }: {
               <h2 className="cond acc-h2">Alojamento</h2>
               {books.length > 0 && <Link className="mono" to="/alojamento">Procurar casas →</Link>}
             </div>
-            <Bookings regs={active} books={books} hosts={data.hosts} />
+            <Bookings regs={active} books={books} hosts={data.hosts} all={data.bookings} />
           </div>
         </section>
       </div>
@@ -474,7 +560,7 @@ function Paid({ reg, race, onPrint }: { reg: Registration; race: Race; onPrint: 
 }
 
 function methodText(method: PayMethod, last4?: string) {
-  return method === 'cartao' && last4 ? `Cartão ···· ${last4}` : METHOD_LABEL[method]
+  return method === 'cartao' && last4 ? `Cartão terminado em ${last4}` : METHOD_LABEL[method]
 }
 
 // ---------- preparação ----------
@@ -499,7 +585,7 @@ function MedicalCert({ reg, race }: { reg: Registration; race: Race }) {
     if (!file) return
     if (!CERT_TYPES.includes(file.type) && !CERT_EXT.test(file.name))
       return setErr(`«${file.name}» não é PDF, JPG ou PNG.`)
-    if (file.size > MAX_CERT_BYTES) return setErr(`O ficheiro tem ${fmtBytes(file.size)}. O limite é 5 MB.`)
+    if (file.size > MAX_CERT_BYTES) return setErr(`O ficheiro tem ${fmtMbUp(file.size)}, acima do limite de 5 MB.`)
     if (file.size === 0) return setErr('O ficheiro está vazio.')
     setErr(null)
     update('registrations', reg.id, {
@@ -508,7 +594,14 @@ function MedicalCert({ reg, race }: { reg: Registration; race: Race }) {
   }
 
   const status = cert ? cert.status : 'em falta'
-  const tone = cert?.status === 'validado' ? 'ok' : cert ? undefined : 'warn'
+  const tone = cert?.status === 'validado' ? 'ok' : !cert || cert.status === 'recusado' ? 'warn' : undefined
+
+  // Substituir um atestado já validado obriga a nova validação: pede confirmação antes de abrir o seletor
+  function guard(e: MouseEvent<HTMLInputElement>) {
+    if (cert?.status !== 'validado') return
+    if (!window.confirm('O atestado atual já está validado. Se o substituíres, volta a ficar à espera de validação. Continuar?'))
+      e.preventDefault()
+  }
 
   return (
     <div className="acc-step">
@@ -527,7 +620,7 @@ function MedicalCert({ reg, race }: { reg: Registration; race: Race }) {
       )}
       {cert?.status === 'em validação' && <p className="muted acc-small">A organização valida em até 5 dias úteis. {deadline}</p>}
       <label className="btn small ghost noarrow acc-file">
-        <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onChange={pick} />
+        <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onClick={guard} onChange={pick} />
         {cert ? 'Substituir ficheiro' : 'Enviar atestado'}
       </label>
       {err && <p className="acc-err-line" role="alert">{err}</p>}
@@ -645,7 +738,7 @@ function Device({ reg }: { reg: Registration }) {
       <p className="muted acc-small">{text}</p>
       <p className="muted acc-fine">
         Para mudar de dispositivo escreve para <a href={`mailto:${EVENT.email}?subject=${encodeURIComponent(`Tracking ${reg.id}`)}`}>{EVENT.email}</a>.{' '}
-        <Link to="/seguranca">Como funciona o tracking</Link>
+        <Link to="/live">Ver a simulação do tracking em direto</Link>
       </p>
     </div>
   )
@@ -771,7 +864,7 @@ function Receipt({ reg }: { reg: Registration }) {
         <b>{reg.bib ?? '—'}</b>
       </div>
       <dl className="kv">
-        <dt>Prova</dt><dd>{race.name} · {race.distanceKm} km · {race.gainM} m D+</dd>
+        <dt>Prova</dt><dd>{race.name} · {fmtNum(race.distanceKm)} km · {fmtNum(race.gainM)} m D+</dd>
         <dt>Partida</dt><dd>{race.start}</dd>
         <dt>Atleta</dt><dd>{reg.first} {reg.last}</dd>
         <dt>Email</dt><dd>{reg.email.trim().toLowerCase()}</dd>
