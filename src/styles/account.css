@@ -1,0 +1,141 @@
+/* Área do atleta (/conta) */
+
+.acc-small { font-size: 15px; }
+.acc-fine { font-size: 13px; margin: 10px 0 0; }
+.acc-err-line { margin: 10px 0 0; padding-left: 12px; border-left: 3px solid var(--ember); color: var(--ember-ink); font-size: 14px; }
+.tag.muted { color: var(--muted); }
+
+/* ---------- entrada ---------- */
+.acc-login { align-items: start; margin-top: clamp(40px, 5vw, 72px); }
+.acc-form { max-width: 520px; }
+.acc-form input[aria-invalid='true'] { border-color: var(--ember); }
+.acc-alt { max-width: 520px; border-top: 1px solid var(--line); padding-top: 24px; }
+.acc-page .acc-fine.mono { font-size: 11px; }
+
+/* ---------- cabeçalho ---------- */
+.acc-linkerr { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin: 0 0 40px; }
+.acc-head { display: grid; grid-template-columns: 1fr auto; gap: 24px 48px; align-items: end; }
+.acc-hello { font-size: clamp(48px, 8vw, 120px); }
+.acc-who { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; text-align: right; }
+.acc-email { font: 500 14px var(--mono); overflow-wrap: anywhere; }
+.acc-stats { grid-template-columns: repeat(3, 1fr); }
+.acc-stats > div:nth-child(3n) { border-right: 0; }
+
+.acc-sechead { align-items: baseline; margin-bottom: 28px; }
+.acc-h2 { font-size: clamp(32px, 4vw, 52px); }
+.acc-sechead a.mono { text-decoration: none; }
+.acc-sechead a.mono:hover { color: var(--ember); }
+
+/* ---------- inscrição ---------- */
+.acc-reg { border-top: 2px solid var(--fg); }
+.acc-reg + .acc-reg { margin-top: 72px; }
+.acc-reg-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--line); }
+.acc-race { font-size: clamp(30px, 3.4vw, 46px); }
+.acc-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 10px 0 0; }
+.acc-meta span + span::before { content: '·'; margin-right: 10px; }
+.acc-reg.is-off .acc-race { color: var(--muted); }
+
+.acc-reg-body { display: grid; grid-template-columns: 5fr 7fr; gap: clamp(32px, 5vw, 80px); padding: 32px 0; align-items: start; }
+.acc-reg-body > * { min-width: 0; }
+.acc-col > * + * { margin-top: 24px; }
+.acc-kv { max-width: 460px; }
+.acc-kv dd { overflow-wrap: anywhere; }
+.acc-kv-tight { margin-top: 14px; gap: 6px 16px; font-size: 15px; }
+.acc-file-name { font-family: var(--mono); font-size: 13px; }
+
+.acc-bibbox { border-top: 2px solid var(--ember); padding-top: 12px; }
+.acc-bib { font-size: clamp(96px, 10.5vw, 160px); line-height: 0.82; margin-top: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* passos de preparação (mesma linguagem da .numlist, com contador próprio para não numerar listas internas) */
+.acc-prep { list-style: none; padding: 0; margin: 0; counter-reset: prep; border-bottom: 1px solid var(--line); }
+.acc-prep > li { counter-increment: prep; display: grid; grid-template-columns: 56px 1fr; padding: 22px 0 24px; border-top: 1px solid var(--line); }
+.acc-prep > li::before { content: counter(prep, decimal-leading-zero); font: 500 13px var(--mono); color: var(--ember); padding-top: 4px; }
+.acc-prep > li > * { min-width: 0; }
+.acc-step-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.acc-step-head h4 { margin: 0; font: 700 19px/1.2 var(--sans); }
+.acc-state { color: var(--muted); white-space: nowrap; }
+.acc-state.ok { color: var(--ok); }
+.acc-state.warn { color: var(--ember); }
+.acc-prep .btn { margin-top: 6px; }
+.acc-prep p.acc-small { margin: 0 0 12px; }
+
+.acc-file { position: relative; }
+.acc-file input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.acc-file:focus-within { outline: 2px solid var(--ember); outline-offset: 3px; }
+
+.acc-bar { height: 4px; background: var(--line); margin: 6px 0 4px; }
+.acc-bar span { display: block; height: 100%; background: var(--ember); transition: width 0.2s; }
+.acc-gear { list-style: none; padding: 0; margin: 10px 0 0; }
+.acc-gear li { border-bottom: 1px solid var(--line); }
+.acc-gear label { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start; padding: 10px 0; cursor: pointer; font-size: 15px; }
+.acc-gear input { accent-color: var(--ember); width: 18px; height: 18px; margin: 2px 0 0; }
+.acc-gear label:has(input:not(:checked)) span { color: var(--ink-2); }
+
+.acc-reg-foot { display: flex; justify-content: space-between; align-items: center; gap: 16px 32px; padding: 20px 0 0; border-top: 1px solid var(--line); }
+.acc-reg-foot p { max-width: 72ch; }
+
+/* ---------- vazio ---------- */
+.acc-empty { border-top: 2px solid var(--fg); padding-top: 28px; max-width: 64ch; }
+.acc-empty .row { margin-top: 24px; }
+
+/* ---------- alojamento ---------- */
+.acc-stay-hint { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin: 0; }
+.acc-books { border-top: 2px solid var(--fg); }
+.acc-book { display: grid; grid-template-columns: 168px 1fr auto; gap: 28px; padding: 24px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.acc-book > * { min-width: 0; }
+.acc-book-plate { aspect-ratio: 4 / 3; overflow: hidden; background: var(--chalk-2); }
+.acc-book.is-off .acc-book-plate { opacity: 0.45; filter: grayscale(1); }
+.acc-book-title { font: 700 22px/1.15 var(--sans); }
+.acc-book-title a { text-decoration: none; }
+.acc-book-title a:hover { color: var(--ember); }
+.acc-nights { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.acc-book-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; text-align: right; }
+.acc-book-total { font: 900 34px/1 var(--display); font-variation-settings: 'wdth' 100; letter-spacing: -0.02em; margin-top: 6px; }
+.acc-book-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.acc-book.is-off .acc-book-total { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 2px; }
+
+@media (max-width: 860px) {
+  .acc-head { grid-template-columns: 1fr; }
+  .acc-who { flex-direction: row; flex-wrap: wrap; align-items: center; text-align: left; gap: 8px 12px; }
+  .acc-reg-body { grid-template-columns: 1fr; }
+  .acc-book { grid-template-columns: 112px 1fr; gap: 16px 20px; }
+  .acc-book-side { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; text-align: left; gap: 8px 16px; }
+  .acc-book-total { margin: 0; font-size: 28px; }
+  .acc-book-actions { justify-content: flex-start; flex-basis: 100%; margin-top: 4px; }
+}
+
+@media (max-width: 560px) {
+  .acc-stats > div { padding-right: 10px; }
+  .acc-stats > div + div { padding-left: 10px; }
+  .acc-stats span { font-size: 10px; }
+  .acc-reg-head { flex-direction: column-reverse; gap: 12px; }
+  .acc-prep > li { grid-template-columns: 40px 1fr; }
+  .acc-reg-foot { flex-direction: column; align-items: flex-start; }
+  .acc-book { grid-template-columns: 1fr; }
+  .acc-book-plate { aspect-ratio: 16 / 7; }
+}
+
+/* ---------- comprovativo impresso ---------- */
+.acc-receipt { display: none; }
+
+@media print {
+  @page { margin: 16mm; }
+  header.nav, footer.footer { display: none !important; }
+  .acc-page button, .acc-page .btn, .acc-page .acc-file { display: none !important; }
+  body { background: #fff; color: #000; }
+  .acc-page { --bg: #fff; --fg: #000; --line: #bbb; --muted: #555; }
+  .acc-page .sec { padding: 0 0 24px; }
+
+  .acc-page.printing .acc-screen { display: none; }
+  .acc-page.printing .acc-receipt { display: block; }
+
+  .acc-receipt { color: #000; max-width: 170mm; margin: 0 auto; font-size: 11pt; }
+  .acc-receipt .mono { margin: 0 0 8mm; }
+  .acc-receipt h1 { font-size: 40pt; }
+  .acc-receipt-sub { margin: 3mm 0 0; font-size: 11pt; }
+  .acc-receipt-bib { display: flex; justify-content: space-between; align-items: flex-end; border-top: 2pt solid #000; border-bottom: 1pt solid #000; margin: 10mm 0 8mm; padding: 4mm 0; }
+  .acc-receipt-bib b { font: 900 64pt/0.85 var(--display); font-variation-settings: 'wdth' 125; }
+  .acc-receipt .kv { gap: 3mm 8mm; }
+  .acc-receipt .kv dt { color: #555; }
+  .acc-receipt-foot { margin-top: 12mm; padding-top: 4mm; border-top: 1pt solid #bbb; font-size: 9pt; color: #555; }
+}
