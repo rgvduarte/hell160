@@ -143,3 +143,10 @@
   .acc-receipt .kv dt { color: #555; }
   .acc-receipt-foot { margin-top: 12mm; padding-top: 4mm; border-top: 1pt solid #bbb; font-size: 9pt; color: #555; }
 }
+
+/* noites de um pedido já confirmadas noutra reserva */
+.acc-night-taken { color: var(--muted); border-style: dashed; }
+.acc-night-taken s { text-decoration-thickness: 1.5px; }
+
+/* título da área pessoal recebe o foco depois de entrar (tabIndex -1): sem contorno */
+.acc-hello[tabindex='-1']:focus { outline: none; }

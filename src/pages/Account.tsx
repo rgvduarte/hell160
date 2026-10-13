@@ -97,7 +97,7 @@ const fmtNum = (n: number) => NUM.format(n)
 const newestFirst = <T extends { createdAt: string }>(a: T, b: T) => b.createdAt.localeCompare(a.createdAt)
 const nightLabel = (iso: string) => EVENT_NIGHTS.find((n) => n.iso === iso)?.label ?? iso
 const nightList = (isos: string[]) => {
-  const l = [...isos].sort().map(nightLabel)
+  const l = [...isos].sort().map((n) => nightLabel(n).replace(/^./, (c) => c.toLowerCase()))
   return l.length > 1 ? `${l.slice(0, -1).join(', ')} e ${l[l.length - 1]}` : l[0] ?? ''
 }
 
@@ -759,12 +759,27 @@ function Gpx({ race }: { race: Race }) {
 
 // ---------- alojamento ----------
 
-function Bookings({ regs, books, hosts }: { regs: Registration[]; books: Booking[]; hosts: HostApplication[] }) {
-  // Casa escolhida na inscrição mas ainda sem pedido de reserva
-  const live = books.filter((b) => b.status === 'pedido' || b.status === 'confirmado')
+type BookIssue = { kind: 'gone' } | { kind: 'clash'; nights: string[]; own: boolean } | null
+
+// Pedido que o anfitrião já não pode aceitar: a casa saiu da plataforma ou há noites confirmadas noutra reserva.
+function bookingIssue(b: Booking, hosts: HostApplication[], all: Booking[]): BookIssue {
+  if (b.status !== 'pedido') return null
+  if (!findListing(b.listingId, hosts)) return { kind: 'gone' }
+  const others = all.filter((o) => o.id !== b.id)
+  const taken = takenNights(b.listingId, others)
+  const nights = b.nights.filter((n) => taken.has(n))
+  if (!nights.length) return null
+  const own = others
+    .filter((o) => o.status === 'confirmado' && o.listingId === b.listingId && o.nights.some((n) => nights.includes(n)))
+    .every((o) => sameEmail(o.email, b.email))
+  return { kind: 'clash', nights, own }
+}
+
+function Bookings({ regs, books, hosts, all }: { regs: Registration[]; books: Booking[]; hosts: HostApplication[]; all: Booking[] }) {
+  // Casa escolhida na inscrição e sem nenhum pedido feito para ela (em qualquer estado)
   const missingStay = regs
     .map((r) => r.stayId)
-    .filter((id): id is string => !!id && !live.some((b) => b.listingId === id))
+    .filter((id): id is string => !!id && !books.some((b) => b.listingId === id))
     .map((id) => findListing(id, hosts))
     .find((l) => !!l)
 
@@ -788,16 +803,18 @@ function Bookings({ regs, books, hosts }: { regs: Registration[]; books: Booking
         </div>
       ) : (
         <div className="acc-books">
-          {books.map((b) => <BookingRow key={b.id} b={b} hosts={hosts} />)}
+          {books.map((b) => <BookingRow key={b.id} b={b} hosts={hosts} all={all} />)}
         </div>
       )}
     </div>
   )
 }
 
-function BookingRow({ b, hosts }: { b: Booking; hosts: HostApplication[] }) {
+function BookingRow({ b, hosts, all }: { b: Booking; hosts: HostApplication[]; all: Booking[] }) {
   const l = findListing(b.listingId, hosts)
   const open = b.status === 'pedido' || b.status === 'confirmado'
+  const issue = bookingIssue(b, hosts, all)
+  const clash = new Set(issue?.kind === 'clash' ? issue.nights : [])
 
   function cancel() {
     const who = l ? `${l.title}, ${l.village}` : 'esta casa'
@@ -806,14 +823,28 @@ function BookingRow({ b, hosts }: { b: Booking; hosts: HostApplication[] }) {
     update('bookings', b.id, { status: 'cancelado' })
   }
 
-  const explain =
-    b.status === 'pedido'
-      ? `À espera de resposta${l ? ` de ${l.host}` : ' do anfitrião'} (até 48 h). Só pagas quando confirmar.`
-      : b.status === 'confirmado'
-        ? `Confirmada${b.decidedAt ? ` a ${fmtDay(b.decidedAt)}` : ''}. ${l ? `${l.host} espera-te` : 'O anfitrião espera-te'} nas noites marcadas.`
-        : b.status === 'recusado'
-          ? 'O anfitrião não pode receber nestas noites. Escolhe outra casa.'
-          : 'Cancelada por ti.'
+  let explain: string
+  if (issue?.kind === 'gone') {
+    explain = 'A casa saiu da plataforma e este pedido já não pode ser confirmado. Cancela o pedido e escolhe outra casa.'
+  } else if (issue?.kind === 'clash') {
+    const every = issue.nights.length === b.nights.length
+    const which = every ? (b.nights.length > 1 ? 'Estas noites' : 'Esta noite') : issue.nights.length > 1 ? `As noites de ${nightList(issue.nights)}` : `A noite de ${nightList(issue.nights)}`
+    const plural = issue.nights.length > 1
+    explain = issue.own
+      ? `${which} já ${plural ? 'estão confirmadas' : 'está confirmada'} nesta casa noutra reserva tua. Cancela este pedido.`
+      : `${which} já ${plural ? 'foram confirmadas' : 'foi confirmada'} a outro hóspede, por isso o anfitrião não pode aceitar este pedido. Cancela-o e escolhe outra casa${every ? '' : ' ou pede só as noites livres'}.`
+  } else if (b.status === 'pedido') {
+    explain = `À espera de resposta${l ? ` de ${l.host}` : ' do anfitrião'} (até 48 h). Só pagas quando confirmar.`
+  } else if (b.status === 'confirmado') {
+    const when = `Confirmada${b.decidedAt ? ` a ${fmtDay(b.decidedAt)}` : ''}.`
+    explain = l
+      ? `${when} ${l.host} espera-te nas noites marcadas.`
+      : `${when} A casa já não aparece na plataforma: escreve para ${EVENT.email} com a referência para confirmar a estadia.`
+  } else if (b.status === 'recusado') {
+    explain = 'O anfitrião não pode receber nestas noites. Escolhe outra casa.'
+  } else {
+    explain = 'Reserva cancelada. As noites voltaram a ficar livres.'
+  }
 
   return (
     <article className={`acc-book${open ? '' : ' is-off'}`}>
@@ -831,18 +862,26 @@ function BookingRow({ b, hosts }: { b: Booking; hosts: HostApplication[] }) {
           {b.guests} {b.guests === 1 ? 'pessoa' : 'pessoas'}
         </p>
         <div className="acc-nights">
-          {[...b.nights].sort().map((n) => <span key={n} className="tag">{nightLabel(n)}</span>)}
+          {[...b.nights].sort().map((n) =>
+            clash.has(n) ? (
+              <span key={n} className="tag acc-night-taken" title="Noite já confirmada noutra reserva">
+                <s>{nightLabel(n)}</s> <span className="sr-only">(ocupada)</span>
+              </span>
+            ) : (
+              <span key={n} className="tag">{nightLabel(n)}</span>
+            ),
+          )}
         </div>
-        <p className="acc-small" style={{ margin: '12px 0 0' }}>{explain}</p>
+        <p className={issue ? 'acc-err-line' : 'acc-small'} style={{ margin: '12px 0 0' }}>{explain}</p>
       </div>
       <div className="acc-book-side">
-        <span className={STATUS_TAG[b.status]}>{b.status}</span>
+        <span className={issue ? 'tag ember' : STATUS_TAG[b.status]}>{issue ? 'bloqueado' : b.status}</span>
         <b className="acc-book-total">{eur(b.totalEur)}</b>
         <span className="mono muted">{b.nights.length} {b.nights.length === 1 ? 'noite' : 'noites'}</span>
         <div className="acc-book-actions">
           {l && <Link className="btn small ghost" to={`/alojamento/${l.id}`}>Ver casa</Link>}
-          {b.status === 'recusado' && <Link className="btn small" to="/alojamento">Outras casas</Link>}
-          {open && <button className="btn small ghost noarrow" onClick={cancel}>Cancelar reserva</button>}
+          {(b.status === 'recusado' || issue) && <Link className="btn small" to="/alojamento">Outras casas</Link>}
+          {open && <button className="btn small ghost noarrow" onClick={cancel}>{issue ? 'Cancelar pedido' : 'Cancelar reserva'}</button>}
         </div>
       </div>
     </article>
