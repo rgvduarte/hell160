@@ -82,7 +82,7 @@ const featureLabel = (f: string) => (FEATURES as Record<string, string>)[f] ?? f
 
 // Uma ação muda a linha (os botões mudam ou desaparecem). Um duplo clique ou dois toques rápidos não podem
 // cair no botão que ficou por baixo do cursor e atuar sobre outro registo.
-function useActGuard(ms = 450) {
+function useActGuard(ms = 400) {
   const last = useRef(0)
   return useCallback(
     (e: { detail: number }, fn: () => void) => {
@@ -1004,8 +1004,8 @@ function listVisibility(h: HostApplication): ReactNode {
     )
   return (
     <>
-      Em Dormir na aldeia só aparece {listWords(off)} (a lista abre a pedir {featureLabel('ac').toLowerCase()}):{' '}
-      <Link to={`/alojamento?${query.toString()}`}>ver na lista</Link> ou <Link to={`/alojamento/${l.id}`}>página da casa</Link>.
+      Na lista de Dormir na aldeia só aparece {listWords(off)}: <Link to={`/alojamento?${query.toString()}`}>ver na lista</Link> ou na{' '}
+      <Link to={`/alojamento/${l.id}`}>página da casa</Link>.
     </>
   )
 }
@@ -1578,31 +1578,121 @@ const KEY_LABEL: Record<Key, string> = {
   leads: 'Contactos',
 }
 
-const KEY_NOUN: Record<Key, string> = {
-  registrations: 'inscrições',
-  bookings: 'reservas',
-  hosts: 'anfitriões',
-  pledges: 'compromissos DAE',
-  leads: 'contactos',
+const KEY_NOUN: Record<Key, [string, string]> = {
+  registrations: ['inscrição', 'inscrições'],
+  bookings: ['reserva', 'reservas'],
+  hosts: ['anfitrião', 'anfitriões'],
+  pledges: ['compromisso DAE', 'compromissos DAE'],
+  leads: ['contacto', 'contactos'],
 }
+const countOf = (k: Key, n: number) => plural(n, ...KEY_NOUN[k])
 
 const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x)
 const isStr = (x: unknown) => typeof x === 'string'
 const isNum = (x: unknown) => typeof x === 'number' && Number.isFinite(x)
-const oneOf = (x: unknown, xs: readonly string[]) => typeof x === 'string' && xs.includes(x)
+const isStrList = (x: unknown) => Array.isArray(x) && x.every(isStr)
+const oneOf = (xs: readonly string[]) => (x: unknown) => typeof x === 'string' && xs.includes(x)
+const opt = (test: (x: unknown) => boolean) => (x: unknown) => x === undefined || test(x)
 
-const CHECK: Record<Key, (x: unknown) => boolean> = {
-  registrations: (x) =>
-    isObj(x) && isStr(x.id) && isStr(x.createdAt) && isStr(x.race) && isStr(x.first) && isStr(x.last) && isStr(x.email) && isNum(x.priceEur) &&
-    oneOf(x.status, ['pendente', 'paga', 'cancelada']),
-  bookings: (x) =>
-    isObj(x) && isStr(x.id) && isStr(x.createdAt) && isStr(x.listingId) && Array.isArray(x.nights) && x.nights.every(isStr) && isNum(x.guests) &&
-    isStr(x.name) && isStr(x.email) && isNum(x.totalEur) && oneOf(x.status, ['pedido', 'confirmado', 'recusado', 'cancelado']),
-  hosts: (x) =>
-    isObj(x) && isStr(x.id) && isStr(x.createdAt) && isStr(x.name) && isStr(x.village) && isNum(x.sleeps) && isNum(x.bedrooms) && isNum(x.eurNight) &&
-    Array.isArray(x.features) && oneOf(x.status, ['pendente', 'aprovado', 'recusado']),
-  pledges: (x) => isObj(x) && isStr(x.id) && isStr(x.createdAt) && isStr(x.name) && isNum(x.amountEur),
-  leads: (x) => isObj(x) && isStr(x.id) && isStr(x.createdAt) && isStr(x.name) && isStr(x.email) && oneOf(x.kind, ['parceiro', 'formacao']),
+// Cada campo que as páginas leem, com o tipo de store.ts. Um campo opcional pode faltar, mas não pode vir com outro tipo.
+type Rule = [field: string, test: (x: unknown) => boolean]
+const firstBad = (x: unknown, rules: Rule[]): string | null => {
+  if (!isObj(x)) return ''
+  for (const [field, test] of rules) if (!test(x[field])) return field
+  return null
+}
+const nested = (rules: Rule[]) => (x: unknown) => firstBad(x, rules) === null
+
+const PAYMENT_RULES: Rule[] = [
+  ['method', oneOf(['mbway', 'multibanco', 'cartao'])],
+  ['requestedAt', isStr],
+  ['entity', opt(isStr)],
+  ['reference', opt(isStr)],
+  ['phone', opt(isStr)],
+  ['last4', opt(isStr)],
+  ['paidAt', opt(isStr)],
+]
+const MEDICAL_RULES: Rule[] = [
+  ['fileName', isStr],
+  ['size', isNum],
+  ['uploadedAt', isStr],
+  ['status', oneOf(['em validação', 'validado', 'recusado'])],
+]
+
+const SCHEMA: Record<Key, Rule[]> = {
+  registrations: [
+    ['id', isStr],
+    ['createdAt', isStr],
+    ['race', isStr],
+    ['first', isStr],
+    ['last', isStr],
+    ['email', isStr],
+    ['phone', isStr],
+    ['birth', isStr],
+    ['nationality', isStr],
+    ['emergencyName', isStr],
+    ['emergencyPhone', isStr],
+    ['device', oneOf(['phone', 'phone+watch', 'rental'])],
+    ['shirt', isStr],
+    ['priceEur', isNum],
+    ['status', oneOf(['pendente', 'paga', 'cancelada'])],
+    ['stayId', opt(isStr)],
+    ['bib', opt(isNum)],
+    ['gearChecked', opt(isStrList)],
+    ['payment', opt(nested(PAYMENT_RULES))],
+    ['medical', opt(nested(MEDICAL_RULES))],
+  ],
+  bookings: [
+    ['id', isStr],
+    ['createdAt', isStr],
+    ['listingId', isStr],
+    ['nights', isStrList],
+    ['guests', isNum],
+    ['name', isStr],
+    ['email', isStr],
+    ['phone', opt(isStr)],
+    ['totalEur', isNum],
+    ['status', oneOf(['pedido', 'confirmado', 'recusado', 'cancelado'])],
+    ['decidedAt', opt(isStr)],
+  ],
+  hosts: [
+    ['id', isStr],
+    ['createdAt', isStr],
+    ['name', isStr],
+    ['phone', isStr],
+    ['email', opt(isStr)],
+    ['village', isStr],
+    ['address', isStr],
+    ['title', opt(isStr)],
+    ['note', opt(isStr)],
+    ['sleeps', isNum],
+    ['bedrooms', isNum],
+    ['eurNight', isNum],
+    ['features', isStrList],
+    ['state', isStr],
+    ['status', oneOf(['pendente', 'aprovado', 'recusado'])],
+    ['decidedAt', opt(isStr)],
+  ],
+  pledges: [
+    ['id', isStr],
+    ['createdAt', isStr],
+    ['name', isStr],
+    ['email', isStr],
+    ['amountEur', isNum],
+    ['place', isStr],
+    ['kind', oneOf(['empresa', 'particular'])],
+  ],
+  leads: [
+    ['id', isStr],
+    ['createdAt', isStr],
+    ['kind', oneOf(['parceiro', 'formacao'])],
+    ['name', isStr],
+    ['email', isStr],
+    ['org', opt(isStr)],
+    ['phone', opt(isStr)],
+    ['village', opt(isStr)],
+    ['interest', opt(isStr)],
+  ],
 }
 
 function parseBackup(text: string): { ok: true; data: Partial<Collections> } | { ok: false; error: string } {
@@ -1619,8 +1709,11 @@ function parseBackup(text: string): { ok: true; data: Partial<Collections> } | {
   for (const k of found) {
     const list = raw[k]
     if (!Array.isArray(list)) return { ok: false, error: `"${k}" devia ser uma lista.` }
-    const bad = list.findIndex((item) => !CHECK[k](item))
-    if (bad >= 0) return { ok: false, error: `${KEY_LABEL[k]}, registo ${bad + 1}: campos em falta ou com tipo errado.` }
+    for (let i = 0; i < list.length; i++) {
+      const field = firstBad(list[i], SCHEMA[k])
+      if (field === '') return { ok: false, error: `${KEY_LABEL[k]}, registo ${i + 1}: devia ser um objeto.` }
+      if (field) return { ok: false, error: `${KEY_LABEL[k]}, registo ${i + 1}: o campo "${field}" falta ou tem um tipo errado.` }
+    }
     const ids = new Set(list.map((item) => (item as { id: string }).id))
     if (ids.size !== list.length) return { ok: false, error: `${KEY_LABEL[k]}: há referências repetidas.` }
     out[k] = list
@@ -1638,7 +1731,7 @@ function DataTab({ data }: { data: Collections }) {
     const d = seedDemo()
     setFlash({
       tone: 'ok',
-      text: `Dados de demonstração carregados: ${d.registrations.length} inscrições, ${d.bookings.length} reservas, ${d.hosts.length} anfitriões, ${d.pledges.length} compromissos e ${d.leads.length} contactos.`,
+      text: `Dados de demonstração carregados: ${listWords(KEYS.map((k) => countOf(k, d[k].length)))}.`,
     })
   }
 
@@ -1660,8 +1753,8 @@ function DataTab({ data }: { data: Collections }) {
       setFlash({ tone: 'error', text: `Importação recusada. ${res.error}` })
       return
     }
-    const summary = KEYS.filter((k) => res.data[k]).map((k) => `${res.data[k]!.length} ${KEY_NOUN[k]}`)
-    const missing = KEYS.filter((k) => !res.data[k]).map((k) => KEY_NOUN[k])
+    const summary = KEYS.filter((k) => res.data[k]).map((k) => countOf(k, res.data[k]!.length))
+    const missing = KEYS.filter((k) => !res.data[k]).map((k) => KEY_NOUN[k][1])
     const warn = missing.length ? ` O ficheiro não traz ${listWords(missing)}: essas coleções ficam vazias.` : ''
     if (!window.confirm(`Importar ${file.name}: ${listWords(summary)}?${warn} Os dados atuais deste browser são substituídos.`)) return
     replaceAll(res.data)

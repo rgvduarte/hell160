@@ -197,3 +197,26 @@
 @media (max-width: 640px) { .adm-ops li { grid-template-columns: minmax(0, 1fr); } }
 .adm .btn.adm-danger { border-color: var(--ember); color: var(--ember); }
 .adm .btn.adm-danger:hover:not(:disabled) { background: var(--ember); color: var(--chalk); }
+
+/* ---------- algarismos tabulares só onde há colunas de números ----------
+   .board e .kv dd pedem tabular-nums; em Schibsted Grotesk isso também dá largura de algarismo a "." e ",",
+   o que parte emails ("marta . valente@...") e listas de noites. */
+.adm-table td:not(.num), .adm-kv dd, .adm-app .mono, .adm-count .mono, .adm-toast { font-variant-numeric: normal; }
+.adm-table .num, .adm .stats b { font-variant-numeric: tabular-nums; }
+
+/* linha ou candidatura tratada agora: fica à vista, marcada, até mudar o filtro ou o separador */
+/* sem mudar medidas: a linha não pode mexer-se debaixo do cursor */
+.adm-table tr.adm-kept td:first-child { box-shadow: inset 3px 0 0 var(--ember); }
+.adm-app.adm-decided { position: relative; }
+.adm-app.adm-decided::before { content: ''; position: absolute; left: -12px; top: 28px; bottom: 28px; width: 3px; background: var(--ember); }
+/* mesma largura com botões ou com o estado: a ficha não se mexe depois de decidir */
+.adm-app-acts { min-width: 124px; }
+.adm-app-done { align-items: flex-start; gap: 12px; }
+.adm-app-state { margin: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.adm-app-state small { font-size: 11px; }
+.adm-app-done a { text-underline-offset: 3px; }
+.adm-app-done a:hover { color: var(--ember); }
+@media (max-width: 960px) {
+  .adm-app-done { align-items: center; justify-content: space-between; }
+  .adm-app-state { flex-direction: row; align-items: baseline; gap: 10px; }
+}
