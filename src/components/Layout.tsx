@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type 
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { EVENT, raceById } from '../data/event'
 import { announcement, navAction } from '../data/site'
-import { Lockup } from './Logo'
+import { Logo } from './Logo'
 import { IconClose, IconInstagram, IconLongArrowUp, IconMail, IconMenu } from './Icons'
 
 const LINKS = [
@@ -14,7 +14,7 @@ const LINKS = [
   ['/conta', 'Área do atleta'],
 ] as const
 
-const SHEET_LINKS = [['/', 'Início'], ...LINKS, ['/apoiar', 'Apoiar']] as const
+const SHEET_LINKS = [['/', 'Início'], ...LINKS, ['/associacao', 'Quem somos'], ['/apoiar', 'Apoiar']] as const
 
 const FOOT_LINKS = [
   ['/provas', 'Provas'],
@@ -22,6 +22,7 @@ const FOOT_LINKS = [
   ['/alojamento', 'Dormir na aldeia'],
   ['/live', 'Live'],
   ['/conta', 'Área do atleta'],
+  ['/associacao', 'Quem somos'],
   ['/apoiar', 'Apoiar'],
   ['/marca', 'Marca'],
 ] as const
@@ -34,6 +35,7 @@ const TITLES: Record<string, string> = {
   '/alojamento/anfitriao': 'Receber atletas em casa',
   '/live': 'Live',
   '/causa': 'A causa',
+  '/associacao': 'Quem somos',
   '/territorio': 'Território',
   '/apoiar': 'Apoiar',
   '/marca': 'Marca',
@@ -94,7 +96,7 @@ export function Layout() {
       <header className={`nav${over && !menu ? ' nav--over' : ''}`}>
         <div className="wrap nav-row">
           <Link to="/" className="nav-brand" aria-label="HELL160, página inicial">
-            <Lockup height={28} />
+            <Logo height={38} />
           </Link>
           <nav className="nav-links" aria-label="Principal">
             <ul>
@@ -284,7 +286,7 @@ function MenuSheet({ open, onClose, returnTo, pathname }: { open: boolean; onClo
     >
       <div className="sheet">
         <div className="sheet-head">
-          <Lockup height={28} />
+          <Logo height={32} />
           <button type="button" className="round" aria-label="Fechar o menu" onClick={() => ref.current?.close()}>
             <IconClose />
           </button>
@@ -335,8 +337,10 @@ function Footer() {
         </button>
         <div className="foot-grid">
           <div className="foot-brand">
-            <Lockup height={56} />
-            <p>Uma prova organizada para levar desfibrilhadores e formação às aldeias da margem esquerda do Guadiana, longe dos hospitais.</p>
+            <Logo variant="stacked" tone="dark" height={132} title="HELL160 Shadows and Dust" />
+            <p>
+              Associação Desportiva e Cultural HELL160. Desporto. Cultura. Comunidade. Um território, um propósito, um futuro.
+            </p>
             <Link className="btn ember" to={navAction().to}>
               {navAction().long}
             </Link>
@@ -363,7 +367,9 @@ function Footer() {
           </div>
         </div>
         <div className="foot-base">
-          <span>© {new Date().getFullYear()} HELL160 · A-do-Pinto, Serpa</span>
+          <span>
+            © {new Date().getFullYear()} Associação Desportiva e Cultural HELL160 · <span className="nw">A-do-Pinto</span>, Serpa
+          </span>
           <span>Datas e preços 2027 sujeitos ao regulamento oficial</span>
         </div>
       </div>

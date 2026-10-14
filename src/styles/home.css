@@ -22,10 +22,9 @@
   padding-bottom: clamp(24px, 4svh, 56px);
 }
 .hero-title { display: grid; gap: clamp(10px, 1.6svh, 18px); }
-.hero-lettering { display: block; width: min(100%, 46svh, 760px); height: auto; }
+.hero-logo { width: min(100%, 44svh, 560px); height: auto; }
 .hero-when span { white-space: nowrap; }
 .hero-when .hero-when-l { display: block; white-space: normal; }
-.hero-tagline { font: 700 clamp(22px, 2.6vw, 34px) / 1.1 var(--display); letter-spacing: -0.02em; }
 .hero-side { display: grid; gap: clamp(16px, 2.4svh, 24px); }
 .hero-when { margin: 0; max-width: 36ch; font-size: 17px; font-weight: 500; line-height: 1.45; color: rgba(255, 255, 255, 0.9); }
 .hero-actions { display: grid; gap: 10px; }
@@ -40,7 +39,7 @@
 }
 @media (min-width: 1024px) {
   .hero-inner { grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); align-items: end; column-gap: clamp(40px, 5vw, 96px); }
-  .hero-lettering { width: min(100%, 76svh, 880px); }
+  .hero-logo { width: min(100%, 60svh, 640px); }
   .hero-side { padding-bottom: 6px; }
 }
 /* telemóvel deitado: duas colunas, o botão acima da dobra */
@@ -49,8 +48,7 @@
     grid-template-columns: auto minmax(260px, 1fr); align-items: end; column-gap: 32px;
     padding-top: calc(var(--nav-h) + 12px); padding-bottom: 20px;
   }
-  .hero-lettering { width: min(100%, 52svh); }
-  .hero-tagline { font-size: 20px; }
+  .hero-logo { width: min(100%, 56svh); }
   .hero-side { gap: 14px; }
   .hero-when { font-size: 15px; }
   .hero-actions { grid-auto-flow: column; justify-content: start; }
@@ -341,3 +339,7 @@
 .press-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding: 18px 0; border-bottom: 1px solid var(--line); }
 .press-list a { display: inline-flex; gap: 10px; align-items: center; text-decoration: none; }
 .press-list a:hover { text-decoration: underline; }
+
+/* ---------- 7b. quem organiza ---------- */
+h2.about-home-t { font-size: clamp(40px, 6vw, 80px); }
+.about-home-p { margin: 0; max-width: 58ch; }

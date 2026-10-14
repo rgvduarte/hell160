@@ -7,7 +7,7 @@ import { LISTINGS } from '../data/listings'
 import { allListings } from '../lib/domain'
 import { useCollection } from '../lib/store'
 import { useDaysTo } from '../components/Graphics'
-import { HeroLettering } from '../components/Logo'
+import { Logo } from '../components/Logo'
 import { Media, VideoFacade } from '../components/Media'
 import { Rail } from '../components/Rail'
 import { ScrollStory } from '../components/ScrollStory'
@@ -29,6 +29,7 @@ export function Home() {
       <Practical />
       <Houses />
       <Territory />
+      <About />
       {MEDIA['video-edicao'].video && <EditionVideo />}
       {TESTIMONIALS.length > 0 && <Testimonials />}
       <Closing />
@@ -49,8 +50,7 @@ function Hero() {
       <Media slot="hero" className="hero-media" tone="night" eager />
       <div className="wrap hero-inner">
         <h1 className="hero-title" id="hero-t">
-          <HeroLettering />
-          <span className="hero-tagline">Shadows and Dust</span>
+          <Logo variant="stacked" tone="dark" height={260} className="hero-logo" title="HELL160 Shadows and Dust" />
         </h1>
         <div className="hero-side">
           <p className="hero-when">
@@ -361,6 +361,33 @@ function Territory() {
               Ver o território
             </Link>
           </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ---------- 7b. quem organiza: a associação ---------- */
+
+function About() {
+  return (
+    <section className="sec about" aria-labelledby="about-t">
+      <div className="wrap split">
+        <h2 className="display about-home-t" id="about-t">
+          Uma região com memória
+        </h2>
+        <div className="stack">
+          <p className="lede">
+            A Associação Desportiva e Cultural HELL160 nasceu de um sonho: não deixar morrer uma região que tanto deu ao país e que hoje luta contra
+            a desertificação, a perda de oportunidades e o esquecimento.
+          </p>
+          <p className="about-home-p">
+            A primeira edição reuniu 320 atletas em <span className="nw">A-do-Pinto</span>. Mas o propósito vai muito além do desporto: cultura,
+            educação, ação social e património, para que as pessoas tenham razões para ficar, para regressar e para investir nesta terra.
+          </p>
+          <Link className="btn" to="/associacao">
+            Quem somos
+          </Link>
         </div>
       </div>
     </section>

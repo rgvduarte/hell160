@@ -15,6 +15,7 @@ import { Territory } from './pages/Territory'
 import { Brand } from './pages/Brand'
 import { NotFound } from './pages/NotFound'
 import { Cause } from './pages/Cause'
+import { Association } from './pages/Association'
 import { Support } from './pages/Support'
 import { Account } from './pages/Account'
 import { Admin } from './pages/Admin'
@@ -34,6 +35,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="alojamento/:id" element={<StayDetail />} />
           <Route path="live" element={<Live />} />
           <Route path="causa" element={<Cause />} />
+          <Route path="associacao" element={<Association />} />
           <Route path="seguranca" element={<Navigate to="/causa" replace />} />
           <Route path="territorio" element={<Territory />} />
           <Route path="apoiar" element={<Support />} />

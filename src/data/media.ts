@@ -32,6 +32,7 @@ export type MediaSlot =
   | 'territorio'
   | 'video-edicao'
   | 'fecho'
+  | 'associacao'
 
 export const MEDIA: Record<MediaSlot, MediaItem> = {
   hero: { alt: 'Partida noturna do HELL160 em A-do-Pinto' },
@@ -43,6 +44,7 @@ export const MEDIA: Record<MediaSlot, MediaItem> = {
   territorio: { alt: 'Pulo do Lobo, a garganta do Guadiana' },
   'video-edicao': { alt: 'Vídeo da edição do HELL160' },
   fecho: { alt: 'Frontais acesos na noite de partida' },
+  associacao: { alt: 'Associados e voluntários da HELL160 em A-do-Pinto' },
 }
 
 // Testemunhos de atletas, voluntários ou anfitriões (só reais, com autorização).

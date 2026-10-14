@@ -1,5 +1,5 @@
 /* HELL160 — sistema visual
-   Branco, preto e um cinzento claro de painel; uma cor só, a brasa, para a ação principal e o 160.
+   Branco, preto e um cinzento claro de painel; uma cor só, o vermelho do logótipo, para a ação principal.
    As fotografias levam a emoção. Botões em pílula, cartões de 20 px, setas redondas, muito espaço. */
 
 :root {
@@ -16,10 +16,11 @@
   --ink-2: #3d3d3d;
   --ink-3: #636363;
 
-  /* a cor: brasa (ação principal e o 160). --ember-ink para texto pequeno sobre claro. */
-  --ember: #c8361b;
-  --ember-ink: #a82b14;
-  --ember-hover: #a82b14;
+  /* a cor: o vermelho do logótipo oficial (base da chama e do 160), para a ação principal.
+     --ember-ink para texto pequeno sobre claro (contraste 6,3:1 em branco). */
+  --ember: #e20613;
+  --ember-ink: #c20510;
+  --ember-hover: #c20510;
 
   --line: rgba(17, 17, 17, 0.14);
   --ok: #2f6b3a;
@@ -264,7 +265,12 @@ section { position: relative; }
 .nav--over .btn.ghost:hover { --btn-bg: #fff; --btn-fg: var(--ink); --btn-bd: #fff; }
 .nav--over { background: transparent; color: #fff; border-bottom-color: transparent; }
 .nav--over .round:hover { background: #fff; color: var(--ink); border-color: #fff; }
-.lockup { display: inline-flex; align-items: center; }
+/* logótipo oficial: o HELL e a assinatura mudam de tom com o fundo; a chama e o 160 não mudam */
+.logo { display: block; flex: none; }
+.logo-hell { fill: var(--logo-hell, #7a6a58); transition: fill 0.25s; }
+.logo-tag { fill: var(--logo-tag, #4b3c31); transition: fill 0.25s; }
+.logo--dark, .nav--over, .foot, .night { --logo-hell: #caba9f; --logo-tag: #ffffff; }
+@media (min-width: 1100px) { .nav-brand .logo { height: 44px; width: auto; } }
 @media (min-width: 1100px) {
   .nav-brand { margin-right: 0; }
   .nav-links { display: block; margin-left: auto; }
@@ -482,7 +488,7 @@ section { position: relative; }
 .board tr.sel td { background: var(--ember); color: #fff; }
 .board .st { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #6fa36a; }
 .board .st.warn { background: #e0a43a; }
-.board .st.sos { background: var(--ember); box-shadow: 0 0 0 3px rgba(200, 54, 27, 0.35); }
+.board .st.sos { background: var(--ember); box-shadow: 0 0 0 3px rgba(226, 6, 19, 0.35); }
 .board .st.out { background: #6b6b6b; }
 .runner { transition: transform 0.9s linear; }
 .runner circle { stroke: var(--bg); stroke-width: 2; }
@@ -511,6 +517,26 @@ section { position: relative; }
 
 /* ---------- a causa / apoiar / marca ---------- */
 h2.cause-h2 { font-size: clamp(30px, 3.4vw, 52px); }
+
+/* ---------- quem somos (manifesto da associação) ---------- */
+.about-hero h1 { font-size: clamp(42px, 7.2vw, 104px); max-width: 15ch; }
+h2.about-h2 { font-size: clamp(32px, 3.8vw, 56px); }
+.about-prose p { margin: 0; max-width: 62ch; }
+.about-prose p + p, .about-prose p + ol { margin-top: 20px; }
+.about-prose .lede { max-width: 46ch; }
+.about-pillars li { grid-template-columns: 40px 1fr; padding: 14px 0; }
+.about-pillars li::before { padding-top: 3px; }
+.about-pillars p { margin: 0; font-size: 19px; }
+.about-pillars strong { font-weight: 700; }
+.about-note { margin: 0; max-width: 34ch; }
+.about-projects { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.about-projects li {
+  padding: 18px 0; border-bottom: 1px solid var(--line);
+  font: 650 clamp(20px, 2vw, 26px) / 1.25 var(--display); letter-spacing: -0.01em; text-wrap: balance;
+}
+.about-vision { display: grid; gap: 10px; padding: clamp(24px, 3vw, 36px); background: var(--paper); border-radius: var(--radius); }
+.about-vision p { margin: 0; }
+.about-sign { margin: 0; max-width: 26ch; font: 750 clamp(28px, 4vw, 56px) / 1.1 var(--display); letter-spacing: -0.025em; text-wrap: balance; }
 .cause-h3 { font-size: clamp(30px, 3.4vw, 46px); }
 .cause-hero .cause-count { margin: 12px 0 0; border-top-color: rgba(255, 255, 255, 0.4); max-width: 34rem; }
 .cause-hero .cause-count span { color: rgba(255, 255, 255, 0.9); }
@@ -528,10 +554,12 @@ h2.cause-h2 { font-size: clamp(30px, 3.4vw, 52px); }
 }
 .support-ways { display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; }
 @media (max-width: 860px) { .support-ways { grid-template-columns: 1fr; } }
-.brand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; padding: 72px var(--gutter); }
+.brand-grid { display: grid; grid-template-columns: 1.4fr 1fr 0.7fr; gap: 48px; padding: 72px var(--gutter); align-items: end; }
 .brand-grid figure { margin: 0; display: grid; gap: 20px; align-content: end; }
-@media (max-width: 760px) { .brand-grid { grid-template-columns: 1fr; } }
-.brand-colors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.brand-grid img { display: block; width: 100%; height: auto; }
+@media (max-width: 760px) { .brand-grid { grid-template-columns: 1fr; } .brand-grid figure:last-child img { width: 60%; } }
+.brand-small { padding: 56px var(--gutter); }
+.brand-colors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
 .brand-colors > div > div:first-child { border-radius: var(--radius-s); box-shadow: inset 0 0 0 1px var(--line); }
 @media (max-width: 640px) { .brand-colors { grid-template-columns: 1fr 1fr; } }
 

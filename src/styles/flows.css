@@ -257,7 +257,7 @@
 .hp-price b { font-size: 17px; }
 .hp-total { color: var(--muted); }
 .hp-avail { font: 600 13px var(--sans); color: var(--ok); }
-.hp-avail.bad { color: var(--ember-ink, #a82b14); }
+.hp-avail.bad { color: var(--ember-ink, #c20510); }
 .hp-more { margin: 0; font-size: 15px; }
 .hp-summary { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
 

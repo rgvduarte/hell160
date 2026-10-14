@@ -48,6 +48,21 @@ export function Cause() {
         </div>
       </section>
 
+      <section className="sec tight rule">
+        <div className="wrap split">
+          <h2 className="cond cause-h3">Quem organiza</h2>
+          <div className="stack">
+            <p className="lede">
+              A Associação Desportiva e Cultural HELL160, que nasceu para não deixar morrer esta região. A rede de desfibrilhadores é parte desse
+              trabalho, ao lado do desporto, da cultura, da educação, da ação social e do património.
+            </p>
+            <Link className="btn ghost" to="/associacao">
+              Quem somos
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section className="sec band-panel">
         <div className="wrap">
           <h2 className="cond cause-h3">Como ajudar</h2>

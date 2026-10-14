@@ -1,69 +1,37 @@
-import { DORSAL, DORSAL_SMALL, LOCKUP, layout } from './logoPaths'
+import { useId } from 'react'
+import { FIRE_STOPS, LOGOS, type LogoVariant } from './logoArt'
 
-// Cores fixas de marca (o dorsal é um objeto: não muda com o tema). O HELL do lockup segue currentColor.
-const INK = 'var(--brand-ink, #15120f)'
-const EMBER = 'var(--brand-ember, #c8361b)'
-const CHALK = 'var(--brand-chalk, #efe9df)'
+// Logótipo oficial HELL160 desenhado em linha, para o cabeçalho poder trocar de tom por cima da fotografia.
+// As cores do HELL e da assinatura vêm de --logo-hell e --logo-tag (claro por defeito, negativo em fundos escuros).
 
-// Símbolo "O Dorsal". Abaixo de 28 px usa a ótica pequena (só o 160).
-export function Mark({ size = 64, title = 'HELL160' }: { size?: number; title?: string }) {
-  if (size < 28) return <MarkSmall size={size} title={title} />
-  return (
-    <svg viewBox={`0 0 ${DORSAL.size} ${DORSAL.size}`} width={size} height={size} role="img" aria-label={title} style={{ display: 'block' }}>
-      <path d={DORSAL.field} fill={EMBER} />
-      <path d={DORSAL.band} fill={INK} />
-      <path d={DORSAL.hell} fill={CHALK} fillRule="evenodd" />
-      <path d={DORSAL.n160} fill={CHALK} fillRule="evenodd" />
-    </svg>
-  )
+type Props = {
+  variant?: LogoVariant
+  height?: number
+  tone?: 'light' | 'dark'
+  title?: string
+  className?: string
 }
 
-export function MarkSmall({ size = 16, title = 'HELL160' }: { size?: number; title?: string }) {
+const r = (n: number) => Math.round(n * 10) / 10
+
+export function Logo({ variant = 'compact', height = 32, tone, title = 'HELL160', className = '' }: Props) {
+  const art = LOGOS[variant]
+  const gid = 'fogo' + useId().replace(/[^a-zA-Z0-9_-]/g, '')
+  const cls = ['logo', tone === 'dark' ? 'logo--dark' : '', className].filter(Boolean).join(' ')
   return (
-    <svg viewBox={`0 0 ${DORSAL_SMALL.size} ${DORSAL_SMALL.size}`} width={size} height={size} role="img" aria-label={title} style={{ display: 'block' }}>
-      <path d={DORSAL_SMALL.field} fill={EMBER} />
-      <path d={DORSAL_SMALL.n160} fill={CHALK} fillRule="evenodd" />
-    </svg>
-  )
-}
-
-// Horizontal: HELL (cor do texto) + caixa brasa com 160.
-export function Lockup({ height = 30, title = 'HELL160' }: { height?: number; title?: string }) {
-  return (
-    <svg
-      viewBox={`0 0 ${LOCKUP.w} ${LOCKUP.h}`}
-      height={height}
-      width={(height * LOCKUP.w) / LOCKUP.h}
-      role="img"
-      aria-label={title}
-      style={{ display: 'block' }}
-    >
-      <path d={LOCKUP.hell} fill="currentColor" fillRule="evenodd" />
-      <path d={LOCKUP.box} fill={EMBER} />
-      <path d={LOCKUP.n160} fill={CHALK} fillRule="evenodd" />
-    </svg>
-  )
-}
-
-// Compatibilidade: o antigo wordmark passa a ser o lockup horizontal.
-export function Wordmark({ height = 24 }: { height?: number }) {
-  return <Lockup height={height} />
-}
-
-// HELL por cima de 160, com a letragem própria (usado no hero do início).
-const HELL = layout('HELL')
-const N160 = layout('160')
-
-export function HeroLettering({ className = 'hero-lettering' }: { className?: string }) {
-  const w = HELL.width
-  return (
-    <svg className={className} viewBox={`0 0 ${w} 128`} role="img" aria-label="HELL160">
-      {HELL.glyphs.map((g, i) => (
-        <path key={`h${i}`} d={g.d} transform={`translate(${g.x} 0)`} fill="currentColor" fillRule="evenodd" />
+    <svg className={cls} viewBox={`0 0 ${art.w} ${art.h}`} width={r((height * art.w) / art.h)} height={height} role="img" aria-label={title}>
+      <defs>
+        <linearGradient id={gid} x1="0" y1="1" x2="0" y2="0">
+          {FIRE_STOPS.map(([o, c]) => (
+            <stop key={o} offset={o} stopColor={c} />
+          ))}
+        </linearGradient>
+      </defs>
+      {art.fire.map((d, i) => (
+        <path key={i} fill={`url(#${gid})`} d={d} />
       ))}
-      {N160.glyphs.map((g, i) => (
-        <path key={`n${i}`} d={g.d} transform={`translate(${g.x} 68)`} fill={EMBER} fillRule="evenodd" />
-      ))}
+      {art.hell && <path className="logo-hell" d={art.hell} />}
+      {art.tag && <path className="logo-tag" d={art.tag} />}
     </svg>
   )
 }
