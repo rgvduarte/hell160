@@ -36,7 +36,7 @@ const TONES = {
   water: '#b9c9cf',
   line: '#c4c2be',
   ink: '#111111',
-  ember: '#c8361b',
+  ember: '#e20613',
 }
 
 async function loadStyle(signal: AbortSignal): Promise<{ style: StyleSpecification | string; fallback: boolean }> {
