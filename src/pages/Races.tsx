@@ -278,7 +278,7 @@ function TrackProfile({ data, label }: { data: RouteProfile; label: string }) {
       ref={box}
       className="route-profile"
       tabIndex={0}
-      aria-label={`${label}: ${km1(total)} km${data.gainM != null ? `, D+ ${data.gainM} m` : ''}, altitude entre ${lo} e ${hi} m. Usa as setas para percorrer.`}
+      aria-label={`${label}: ${km1(total)} km, altitude entre ${lo} e ${hi} m. Usa as setas para percorrer.`}
       onPointerMove={onMove}
       onPointerDown={onMove}
       onPointerLeave={(e) => e.pointerType === 'mouse' && setAt(null)}
@@ -485,11 +485,6 @@ export function RaceDetail() {
                 <div className="route-files">
                   <p className="mono muted cm-plain">
                     Traçado oficial da edição 2026, igual em 2027
-                    {prof && (
-                      <>
-                        {' '}· GPS: {km1(prof.distanceKm)} km{prof.gainM != null && <>, D+ {prof.gainM.toLocaleString('pt-PT')} m</>}
-                      </>
-                    )}
                   </p>
                   <a className="btn small ghost noarrow" href={real.gpxUrl} download={`${ROUTE_FILES[race.id]}-2026.gpx`}>
                     Descarregar GPX

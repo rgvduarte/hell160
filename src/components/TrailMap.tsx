@@ -493,10 +493,10 @@ export function TrailMap({
       {terrain3d && ready && !noRoute && (
         <div className="trailmap-view">
           <div className="trailmap-seg" role="group" aria-label="Vista do mapa">
-            <button type="button" aria-pressed={view === '2d'} onClick={() => view === '3d' && to2d()}>
+            <button type="button" className={`btn small${view === '2d' ? '' : ' ghost'}`} aria-pressed={view === '2d'} onClick={() => view === '3d' && to2d()}>
               Ver em 2D
             </button>
-            <button type="button" aria-pressed={view === '3d'} onClick={() => view === '2d' && to3d()}>
+            <button type="button" className={`btn small${view === '3d' ? '' : ' ghost'}`} aria-pressed={view === '3d'} onClick={() => view === '2d' && to3d()}>
               Ver em 3D
             </button>
           </div>

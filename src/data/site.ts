@@ -31,7 +31,7 @@ export const NEWSLETTER_ENDPOINT = ''
 // true: a página da prova mostra o mapa real (2D/3D), o perfil, os pontos do GPX e o GPX para descarregar;
 // com hell160 a true, o início e o Território também mostram o mapa real.
 // false: mapa esquemático (HELL160) ou aviso de publicação. Nunca um traçado inventado.
-export const ROUTE_PUBLISHED: Record<string, boolean> = { hell160: false, hell100: false, bike: false }
+export const ROUTE_PUBLISHED: Record<string, boolean> = { hell160: true, hell100: true, bike: false }
 
 export const NEWSLETTER: To = { pathname: '/', hash: '#novidades' }
 
