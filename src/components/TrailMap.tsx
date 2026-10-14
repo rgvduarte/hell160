@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { Map as MLMap, StyleSpecification, LngLatBoundsLike, IControl, MapSourceDataEvent, CameraOptions } from 'maplibre-gl'
+import type { Map as MLMap, StyleSpecification, LayerSpecification, LngLatBoundsLike, IControl, MapSourceDataEvent, CameraOptions } from 'maplibre-gl'
 import type { RouteWaypoint } from '../data/routes'
 import '../styles/map.css'
 
@@ -52,12 +52,67 @@ const LOCALE = {
   'CooperativeGesturesHandler.MobileHelpText': 'Usa dois dedos para mover o mapa',
 }
 
+// Cores do logótipo (ver os tokens em global.css): terra em --panel, água em areia esbatida, estradas e limites em
+// tons de --areia e --po, nomes em --ink-3, traçado em --fire com contorno branco. Sem cinzentos neutros.
 const TONES = {
-  land: '#f3f2f0',
-  water: '#b9c9cf',
-  line: '#c4c2be',
-  ink: '#111111',
-  ember: '#e20613',
+  land: '#f2eee7', // --panel
+  park: '#ebe5da',
+  wood: '#e6dfd2',
+  residential: '#eae3d9', // --panel-2
+  building: '#e7e0d5',
+  buildingLine: '#dcd2c3',
+  water: '#d9cdb9', // areia esbatida
+  waterway: '#cdbfa8',
+  roadCasing: '#d6c9b3', // areia clara
+  roadInner: '#fbf9f5',
+  roadMinor: '#e2d8c8',
+  roadPath: '#e8e0d3',
+  roadSubtle: 'rgba(202, 186, 159, 0.55)', // --areia
+  rail: '#d6c9b3',
+  railDash: '#f7f3ec',
+  boundary: 'rgba(122, 106, 88, 0.7)', // --po
+  label: '#6f604f', // --ink-3 (5,2:1 sobre a terra)
+  halo: 'rgba(242, 238, 231, 0.9)',
+  ember: '#e20613', // --fire
+}
+
+// Reconta as cores do Positron para os tons do logótipo, camada a camada.
+function tint(l: LayerSpecification): LayerSpecification {
+  const id = l.id
+  const paint = (p: Record<string, unknown>) => ({ ...l, paint: { ...l.paint, ...p } }) as LayerSpecification
+  if (l.type === 'background') return paint({ 'background-color': TONES.land })
+  if (l.type === 'fill') {
+    if (/water/.test(id)) return paint({ 'fill-color': TONES.water })
+    if (/park/.test(id)) return paint({ 'fill-color': TONES.park })
+    if (/wood/.test(id)) return paint({ 'fill-color': TONES.wood })
+    if (/residential/.test(id)) return paint({ 'fill-color': TONES.residential })
+    if (/building/.test(id)) return paint({ 'fill-color': TONES.building, 'fill-outline-color': TONES.buildingLine })
+    return paint({ 'fill-color': TONES.park })
+  }
+  if (l.type === 'line') {
+    if (/waterway/.test(id)) return paint({ 'line-color': TONES.waterway })
+    if (/boundary/.test(id)) return paint({ 'line-color': TONES.boundary })
+    if (/dashline/.test(id)) return paint({ 'line-color': TONES.railDash })
+    if (/railway/.test(id)) return paint({ 'line-color': TONES.rail })
+    if (/casing/.test(id)) return paint({ 'line-color': TONES.roadCasing })
+    if (/subtle/.test(id)) return paint({ 'line-color': TONES.roadSubtle })
+    if (/inner/.test(id)) {
+      const c = l.paint?.['line-color']
+      // autoestradas: discretas a zoom baixo, cheias a partir do 6, como no Positron
+      return paint({ 'line-color': Array.isArray(c) ? ['interpolate', ['linear'], ['zoom'], 5.8, TONES.roadSubtle, 6, TONES.roadInner] : TONES.roadInner })
+    }
+    if (/path/.test(id)) return paint({ 'line-color': TONES.roadPath })
+    if (/minor/.test(id)) return paint({ 'line-color': TONES.roadMinor })
+    return paint({ 'line-color': TONES.roadCasing })
+  }
+  if (l.type === 'symbol' && l.layout && 'text-field' in l.layout) {
+    return {
+      ...l,
+      layout: { ...l.layout, 'text-field': ['coalesce', ['get', 'name:pt'], ['get', 'name']] },
+      paint: { ...l.paint, 'text-color': TONES.label, 'text-halo-color': TONES.halo },
+    } as LayerSpecification
+  }
+  return l
 }
 
 const KIND_LABEL: Record<NonNullable<MapMarker['kind']>, string> = {
@@ -77,16 +132,7 @@ async function loadStyle(signal: AbortSignal): Promise<{ style: StyleSpecificati
     // a atribuição (em português) vai no controlo do mapa; a do TileJSON repetia-a em inglês.
     // O que está no estilo sobrepõe-se ao TileJSON, e uma atribuição vazia não aparece.
     for (const src of Object.values(style.sources)) if (src.type === 'vector' || src.type === 'raster') src.attribution = ''
-    style.layers = style.layers
-      .filter((l) => !/poi|housenumber|aerodrome|airport/.test(l.id))
-      .map((l) => {
-        if (l.type === 'symbol' && l.layout && 'text-field' in l.layout) {
-          return { ...l, layout: { ...l.layout, 'text-field': ['coalesce', ['get', 'name:pt'], ['get', 'name']] } } as typeof l
-        }
-        if (l.type === 'fill' && /water/.test(l.id)) return { ...l, paint: { ...l.paint, 'fill-color': TONES.water } } as typeof l
-        if (l.type === 'background') return { ...l, paint: { ...l.paint, 'background-color': TONES.land } } as typeof l
-        return l
-      })
+    style.layers = style.layers.filter((l) => !/poi|housenumber|aerodrome|airport/.test(l.id)).map(tint)
     return { style, fallback: false }
   } catch {
     return {
@@ -97,7 +143,7 @@ async function loadStyle(signal: AbortSignal): Promise<{ style: StyleSpecificati
         layers: [
           { id: 'sea', type: 'background', paint: { 'background-color': TONES.water } },
           { id: 'land', type: 'fill', source: 'iberia', paint: { 'fill-color': TONES.land } },
-          { id: 'border', type: 'line', source: 'iberia', paint: { 'line-color': TONES.line, 'line-width': 1.2, 'line-dasharray': [3, 2] } },
+          { id: 'border', type: 'line', source: 'iberia', paint: { 'line-color': TONES.boundary, 'line-width': 1.2, 'line-dasharray': [3, 2] } },
         ],
       },
     }
@@ -380,9 +426,10 @@ export function TrailMap({
           type: 'hillshade',
           source: HILLSHADE_SRC,
           paint: {
-            'hillshade-shadow-color': '#5b544d',
-            'hillshade-highlight-color': '#ffffff',
-            'hillshade-accent-color': '#7d756c',
+            // sombra em --sombra, luz branca, ambas com pouca opacidade
+            'hillshade-shadow-color': 'rgba(75, 60, 49, 0.6)',
+            'hillshade-highlight-color': 'rgba(255, 255, 255, 0.5)',
+            'hillshade-accent-color': 'rgba(75, 60, 49, 0.3)',
             'hillshade-exaggeration': 0.5,
           },
         },
