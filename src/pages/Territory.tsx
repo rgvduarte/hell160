@@ -43,7 +43,7 @@ export function Territory() {
           {route ? (
             <div>
               <div className="map-frame">
-                <TrailMap routes={[mapRoute('hell160')!]} height={560} label="Mapa do território e do percurso do HELL160" />
+                <TrailMap routes={[mapRoute('hell160')!]} terrain3d height={560} label="Mapa do território e do percurso do HELL160" />
               </div>
               <p className="muted mt-s">GR15 e GR15.2 · margem esquerda do Guadiana</p>
             </div>

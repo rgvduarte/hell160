@@ -38,7 +38,7 @@
 /* ---------- marcadores dos pontos do GPX ---------- */
 .map-marker.aid i { width: 11px; height: 11px; border-width: 2px; }
 .map-marker.water i { width: 10px; height: 10px; background: #2f7590; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(17, 17, 17, 0.35); }
-.map-marker.control i { width: 11px; height: 11px; background: var(--ink); border: 2px solid #fff; border-radius: 2px; box-shadow: 0 0 0 1px var(--ink); }
+.map-marker.control i { width: 11px; height: 11px; background: #fff; border: 2.5px solid var(--ink); border-radius: 1px; }
 .map-marker.life i { width: 14px; height: 14px; border-radius: 3px; transform: translateX(-50%) rotate(45deg); box-shadow: 0 0 0 2px #fff; }
 .map-marker.start i { border-radius: 3px; box-shadow: 0 0 0 2px #fff; }
 .map-marker span { font-weight: 600; white-space: nowrap; }
@@ -54,7 +54,7 @@
 .route-key i.start { width: 13px; height: 13px; border-radius: 3px; background: var(--ink); }
 .route-key i.life { width: 11px; height: 11px; border-radius: 2px; background: var(--ember); border-color: var(--ember); transform: rotate(45deg); }
 .route-key i.water { width: 10px; height: 10px; background: #2f7590; border-color: #2f7590; }
-.route-key i.control { border-radius: 2px; background: var(--ink); }
+.route-key i.control { border-radius: 1px; }
 
 .route-files { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-top: 16px; }
 .route-files p { margin: 0; }
