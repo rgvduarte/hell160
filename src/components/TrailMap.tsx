@@ -74,8 +74,9 @@ async function loadStyle(signal: AbortSignal): Promise<{ style: StyleSpecificati
     const res = await fetch(POSITRON, { signal })
     if (!res.ok) throw new Error(String(res.status))
     const style = (await res.json()) as StyleSpecification
-    // a atribuição (em português) vai no controlo do mapa; a do estilo repetia-a em inglês
-    for (const src of Object.values(style.sources)) if ('attribution' in src) delete src.attribution
+    // a atribuição (em português) vai no controlo do mapa; a do TileJSON repetia-a em inglês.
+    // O que está no estilo sobrepõe-se ao TileJSON, e uma atribuição vazia não aparece.
+    for (const src of Object.values(style.sources)) if (src.type === 'vector' || src.type === 'raster') src.attribution = ''
     style.layers = style.layers
       .filter((l) => !/poi|housenumber|aerodrome|airport/.test(l.id))
       .map((l) => {
@@ -382,7 +383,7 @@ export function TrailMap({
             'hillshade-shadow-color': '#5b544d',
             'hillshade-highlight-color': '#ffffff',
             'hillshade-accent-color': '#7d756c',
-            'hillshade-exaggeration': 0.4,
+            'hillshade-exaggeration': 0.5,
           },
         },
         before,
