@@ -26,9 +26,12 @@ export const SITE: { registration: { status: RegistrationStatus; opens?: string 
 // para EVENT.email: o site nunca diz que guardou um contacto que não chegou à organização.
 export const NEWSLETTER_ENDPOINT = ''
 
-// Traçados oficiais publicados (GPX convertido para public/routes/<id>.geojson).
-// Enquanto for false, o início e o Território não mostram mapa do percurso, só a informação do território.
-export const ROUTE_PUBLISHED: Record<string, boolean> = { hell160: false }
+// Traçados oficiais publicados, por ficheiro de public/routes/ (ver ROUTE_FILES em src/data/routes.ts;
+// as estafetas usam o hell100). Converter primeiro o GPX: node scripts/gpx-to-geojson.mjs <ficheiro.gpx> <id>.
+// true: a página da prova mostra o mapa real (2D/3D), o perfil, os pontos do GPX e o GPX para descarregar;
+// com hell160 a true, o início e o Território também mostram o mapa real.
+// false: mapa esquemático (HELL160) ou aviso de publicação. Nunca um traçado inventado.
+export const ROUTE_PUBLISHED: Record<string, boolean> = { hell160: false, hell100: false, bike: false }
 
 export const NEWSLETTER: To = { pathname: '/', hash: '#novidades' }
 

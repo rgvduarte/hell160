@@ -17,7 +17,7 @@
 //   - o km de cada ponto é a projeção na linha do percurso; se o percurso passa duas vezes perto do mesmo
 //     ponto, fica a passagem que mantém os PA por ordem e o script avisa.
 
-import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync, chmodSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -265,6 +265,7 @@ writeFileSync(
 )
 const gpxOut = fileURLToPath(new URL(`${id}.gpx`, outDir))
 if (resolve(file) !== gpxOut) copyFileSync(file, gpxOut)
+chmodSync(gpxOut, 0o644)
 
 const eles = profile.map((p) => p[1]).filter((v) => v != null)
 console.log(
