@@ -2,13 +2,13 @@
 
 .acc-small { font-size: 15px; }
 .acc-fine { font-size: 13px; margin: 10px 0 0; }
-.acc-err-line { margin: 10px 0 0; padding-left: 12px; border-left: 3px solid var(--ember); color: var(--ember-ink); font-size: 14px; }
+.acc-err-line { margin: 10px 0 0; padding-left: 12px; border-left: 3px solid var(--ember-ink); color: var(--ember-ink); font-size: 14px; }
 .tag.muted { color: var(--muted); }
 
 /* ---------- entrada ---------- */
 .acc-login { align-items: start; margin-top: clamp(40px, 5vw, 72px); }
 .acc-form { max-width: 520px; }
-.acc-form input[aria-invalid='true'] { border-color: var(--ember); }
+.acc-form input[aria-invalid='true'] { border-color: var(--ember-ink); }
 .acc-alt { max-width: 520px; border-top: 1px solid var(--line); padding-top: 24px; }
 .acc-page .acc-fine.mono { font-size: 13px; }
 
@@ -25,7 +25,7 @@
 .acc-sechead { align-items: baseline; margin-bottom: 28px; }
 .acc-h2 { font-size: clamp(32px, 4vw, 52px); }
 .acc-sechead a.mono { text-decoration: none; }
-.acc-sechead a.mono:hover { color: var(--ember); }
+.acc-sechead a.mono:hover { color: var(--ember-ink); }
 
 /* ---------- inscrição ---------- */
 .acc-reg { border-top: 2px solid var(--fg); }
@@ -50,7 +50,7 @@
 /* passos de preparação (mesma linguagem da .numlist, com contador próprio para não numerar listas internas) */
 .acc-prep { list-style: none; padding: 0; margin: 0; counter-reset: prep; }
 .acc-prep > li { counter-increment: prep; display: grid; grid-template-columns: 56px 1fr; padding: 22px 0 24px; border-top: 1px solid var(--line); }
-.acc-prep > li::before { content: counter(prep, decimal-leading-zero); font: 500 13px var(--mono); color: var(--ember); padding-top: 4px; }
+.acc-prep > li::before { content: counter(prep, decimal-leading-zero); font: 500 13px var(--mono); color: var(--ember-ink); padding-top: 4px; }
 .acc-prep > li > * { min-width: 0; }
 .acc-step > *, .acc-step > [aria-live] > * { margin: 0; }
 .acc-step > * + *, .acc-step > [aria-live] > * + * { margin-top: 12px; }
@@ -59,11 +59,11 @@
 .acc-step-head h4 { margin: 0; font: 700 19px/1.2 var(--sans); }
 .acc-state { color: var(--muted); white-space: nowrap; }
 .acc-state.ok { color: var(--ok); }
-.acc-state.warn { color: var(--ember); }
+.acc-state.warn { color: var(--ember-ink); }
 
 .acc-file { position: relative; }
 .acc-file input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
-.acc-file:focus-within { outline: 2px solid var(--ember); outline-offset: 3px; }
+.acc-file:focus-within { outline: 2px solid var(--ember-ink); outline-offset: 3px; }
 
 .acc-bar { height: 4px; background: var(--line); }
 .acc-bar span { display: block; height: 100%; background: var(--ember); transition: width 0.2s; }
@@ -90,7 +90,7 @@
 .acc-book.is-off .acc-book-plate { opacity: 0.45; filter: grayscale(1); }
 .acc-book-title { font: 700 22px/1.15 var(--sans); }
 .acc-book-title a { text-decoration: none; }
-.acc-book-title a:hover { color: var(--ember); }
+.acc-book-title a:hover { color: var(--ember-ink); }
 .acc-nights { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .acc-book-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; text-align: right; }
 .acc-book-total { font: 900 34px/1 var(--display); font-variation-settings: 'wdth' 100; letter-spacing: -0.02em; margin-top: 6px; }

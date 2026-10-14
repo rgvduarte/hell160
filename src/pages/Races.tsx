@@ -450,7 +450,7 @@ export function RaceDetail() {
             <dl className="kv mt-s">
               {race.prices.map((x) => (
                 <div key={x.until} style={{ display: 'contents' }}>
-                  <dt style={{ color: x === p ? 'var(--ember)' : undefined }}>{x.label}</dt>
+                  <dt style={{ color: x === p ? 'var(--ember-ink)' : undefined }}>{x.label}</dt>
                   <dd style={{ fontWeight: x === p ? 700 : 400 }}>{x.eur} €</dd>
                 </div>
               ))}

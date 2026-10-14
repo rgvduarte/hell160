@@ -29,7 +29,7 @@
   .adm-tabs button, .adm-tabs button:first-child { padding: 14px 0 11px; margin-bottom: 0; font-size: 12px; border-bottom: 3px solid transparent; box-shadow: 0 1px 0 var(--line); }
   .adm-tabs button:nth-child(n + 4) { box-shadow: 0 2px 0 var(--fg); }
 }
-.adm-badge { font: 600 11px/1 var(--mono); background: var(--ember); color: var(--chalk); padding: 3px 6px; letter-spacing: 0; }
+.adm-badge { font: 600 11px/1 var(--mono); background: var(--ember); color: var(--ember-fg); padding: 3px 6px; letter-spacing: 0; }
 
 .adm-body { padding: clamp(32px, 4vw, 56px) 0 clamp(72px, 8vw, 128px); }
 
@@ -90,7 +90,7 @@
 .adm-todo b { font: 900 30px/1 var(--display); font-variation-settings: 'wdth' 100; letter-spacing: -0.02em; }
 .adm-todo .go { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; }
 .adm-todo .go::after { content: ' →'; font-family: var(--sans); }
-.adm-todo a:hover { color: var(--ember); }
+.adm-todo a:hover { color: var(--ember-ink); }
 
 /* ---------- tabelas ---------- */
 .adm-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-top: 2px solid var(--fg); max-width: 100%; }
@@ -104,19 +104,19 @@
 .adm-table .who { font: 500 15px/1.3 var(--sans); }
 .adm-table .adm-wrap { min-width: 16ch; max-width: 32ch; }
 .adm-table a { text-underline-offset: 3px; }
-.adm-table a:hover { color: var(--ember); }
+.adm-table a:hover { color: var(--ember-ink); }
 .adm-table tr.off td { color: var(--muted); }
 .adm-table tr.adm-opened td { background: color-mix(in srgb, var(--fg) 5%, transparent); border-bottom-color: transparent; }
 .adm-table tfoot td { border-top: 2px solid var(--fg); border-bottom: 0; font-weight: 600; }
 .adm-table .tag { white-space: nowrap; }
 .adm .tag.adm-dim { opacity: 0.55; }
-.adm .tag.adm-warn { color: var(--ember); }
+.adm .tag.adm-warn { color: var(--ember-ink); }
 .adm .adm-okt { color: var(--ok); }
 
 .adm-who { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; text-align: left; font: 600 15px/1.3 var(--sans); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
-.adm-who:hover, .adm-who[aria-expanded='true'] { color: var(--ember); text-decoration-color: currentColor; }
+.adm-who:hover, .adm-who[aria-expanded='true'] { color: var(--ember-ink); text-decoration-color: currentColor; }
 .adm-sort { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; font: inherit; letter-spacing: inherit; text-transform: inherit; }
-.adm-sort:hover { color: var(--ember); }
+.adm-sort:hover { color: var(--ember-ink); }
 
 .adm-detail td { background: color-mix(in srgb, var(--fg) 5%, transparent); padding: 4px 8px 22px; }
 .adm-table tr.adm-detail:hover td { background: color-mix(in srgb, var(--fg) 5%, transparent); }
@@ -131,12 +131,12 @@
 .adm .chip.adm-act { padding: 6px 9px; font-size: 11px; white-space: nowrap; }
 .adm .chip.adm-act:hover { background: var(--fg); color: var(--bg); }
 .adm .chip.adm-act.go { background: var(--fg); color: var(--bg); }
-.adm .chip.adm-act.go:hover { background: var(--ember); border-color: var(--ember); color: var(--chalk); }
-.adm .chip.adm-act.danger { border-color: var(--ember); color: var(--ember); }
-.adm .chip.adm-act.danger:hover { background: var(--ember); color: var(--chalk); }
+.adm .chip.adm-act.go:hover { background: var(--ember); border-color: var(--ember); color: var(--ember-fg); }
+.adm .chip.adm-act.danger { border-color: var(--ember-ink); color: var(--ember-ink); }
+.adm .chip.adm-act.danger:hover { background: var(--ember); color: var(--ember-fg); }
 
 .adm-link { background: none; border: 0; padding: 0; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.adm-link:hover { color: var(--ember); }
+.adm-link:hover { color: var(--ember-ink); }
 
 /* ---------- filtros e avisos ---------- */
 .adm-toolbar { display: grid; grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); gap: 20px 28px; align-items: end; }
@@ -195,8 +195,8 @@
 .adm-ops p { margin: 6px 0 0; font-size: 15px; }
 .adm-ops .btn { justify-content: center; }
 @media (max-width: 640px) { .adm-ops li { grid-template-columns: minmax(0, 1fr); } }
-.adm .btn.adm-danger { border-color: var(--ember); color: var(--ember); }
-.adm .btn.adm-danger:hover:not(:disabled) { background: var(--ember); color: var(--chalk); }
+.adm .btn.adm-danger { border-color: var(--ember-ink); color: var(--ember-ink); }
+.adm .btn.adm-danger:hover:not(:disabled) { background: var(--ember); color: var(--ember-fg); }
 
 /* ---------- algarismos tabulares só onde há colunas de números ----------
    .board e .kv dd pedem tabular-nums; em Schibsted Grotesk isso também dá largura de algarismo a "." e ",",
@@ -215,7 +215,7 @@
 .adm-app-state { margin: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .adm-app-state small { font-size: 11px; }
 .adm-app-done a { text-underline-offset: 3px; }
-.adm-app-done a:hover { color: var(--ember); }
+.adm-app-done a:hover { color: var(--ember-ink); }
 @media (max-width: 960px) {
   .adm-app-done { align-items: center; justify-content: space-between; }
   .adm-app-state { flex-direction: row; align-items: baseline; gap: 10px; }

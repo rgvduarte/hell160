@@ -32,7 +32,7 @@
 .map-marker.aid i { width: 11px; height: 11px; border-width: 2px; }
 .map-marker.water i { width: 10px; height: 10px; background: var(--areia); border: 2px solid var(--ink); }
 .map-marker.control i { width: 11px; height: 11px; background: var(--paper); border: 2.5px solid var(--ink); border-radius: 1px; }
-.map-marker.life i { width: 14px; height: 14px; border-radius: 3px; background: var(--fire); border-color: var(--fire); transform: translateX(-50%) rotate(45deg); box-shadow: 0 0 0 2px var(--paper); }
+.map-marker.life i { width: 14px; height: 14px; border-radius: 3px; background: var(--ember); border-color: var(--ember); transform: translateX(-50%) rotate(45deg); box-shadow: 0 0 0 2px var(--paper); }
 .map-marker.start i { border-radius: 3px; box-shadow: 0 0 0 2px var(--paper); }
 .map-marker span { font-weight: 600; white-space: nowrap; }
 
@@ -43,9 +43,9 @@
 }
 .route-key li { display: inline-flex; align-items: center; gap: 8px; }
 .route-key i { display: inline-block; flex: none; width: 11px; height: 11px; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); }
-.route-key i.route { width: 22px; height: 4px; border: 0; border-radius: 2px; background: var(--fire); box-shadow: 0 0 0 1.5px var(--paper), 0 0 0 2.5px var(--line); }
+.route-key i.route { width: 22px; height: 4px; border: 0; border-radius: 2px; background: var(--ember); box-shadow: 0 0 0 1.5px var(--paper), 0 0 0 2.5px var(--line); }
 .route-key i.start { width: 13px; height: 13px; border-radius: 3px; background: var(--ink); }
-.route-key i.life { width: 11px; height: 11px; border-radius: 2px; background: var(--fire); border-color: var(--fire); transform: rotate(45deg); }
+.route-key i.life { width: 11px; height: 11px; border-radius: 2px; background: var(--ember); border-color: var(--ember); transform: rotate(45deg); }
 .route-key i.water { width: 10px; height: 10px; background: var(--areia); }
 .route-key i.control { border-radius: 1px; }
 
@@ -54,7 +54,7 @@
 
 /* ---------- perfil altimétrico real ---------- */
 .route-profile { position: relative; outline: none; touch-action: pan-y; }
-.route-profile:focus-visible { outline: 2px solid var(--fire); outline-offset: 6px; border-radius: 4px; }
+.route-profile:focus-visible { outline: 2px solid var(--ember-ink); outline-offset: 6px; border-radius: 4px; }
 .route-profile svg { display: block; width: 100%; overflow: visible; }
 .route-profile .grid { stroke: var(--line); stroke-width: 1; shape-rendering: crispEdges; }
 .route-profile .base { stroke: var(--fg); stroke-width: 1; opacity: 0.5; shape-rendering: crispEdges; }
@@ -63,9 +63,9 @@
 .route-profile .line { fill: none; stroke: var(--fg); stroke-width: 2; stroke-linejoin: round; }
 .route-profile .wp { stroke: var(--fg); stroke-width: 2; stroke-linecap: round; }
 .route-profile .wp.water { stroke: var(--areia); }
-.route-profile .wp.life { stroke: var(--fire); stroke-width: 4; }
+.route-profile .wp.life { stroke: var(--ember); stroke-width: 4; }
 .route-profile .cursor { stroke: var(--fg); stroke-width: 1; }
-.route-profile .dot { fill: var(--fire); stroke: var(--bg); stroke-width: 2; }
+.route-profile .dot { fill: var(--ember); stroke: var(--bg); stroke-width: 2; }
 .route-profile-tip {
   position: absolute; top: 0; z-index: 1; pointer-events: none; white-space: nowrap;
   padding: 6px 10px; border-radius: 10px; background: var(--bg); color: var(--fg);

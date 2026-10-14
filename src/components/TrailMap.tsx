@@ -73,7 +73,7 @@ const TONES = {
   boundary: 'rgba(122, 106, 88, 0.7)', // --po
   label: '#6f604f', // --ink-3 (5,2:1 sobre a terra)
   halo: 'rgba(242, 238, 231, 0.9)',
-  ember: '#e20613', // --fire
+  ember: '#f17307', // --ember, o laranja do 160
 }
 
 // Reconta as cores do Positron para os tons do logótipo, camada a camada.

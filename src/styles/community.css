@@ -45,15 +45,15 @@
 .cm-live .live-side { overflow: visible; max-height: calc(100svh - 64px); position: sticky; top: 64px; align-self: start; }
 .cm-tools { flex: none; padding: 16px 16px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 12px; }
 .cm-search { display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--fg); }
-.cm-search:focus-within { border-color: var(--ember); }
+.cm-search:focus-within { border-color: var(--ember-ink); }
 .cm-search input { flex: 1; min-width: 0; font: 400 16px var(--sans); color: var(--fg); background: transparent; border: 0; padding: 10px 0; border-radius: 0; }
 .cm-search input:focus { outline: none; }
 .cm-search input::-webkit-search-cancel-button { display: none; }
 .cm-search button { font: 500 14px var(--sans); background: none; border: 0; color: var(--muted); cursor: pointer; padding: 8px 0 8px 8px; }
-.cm-search button:hover { color: var(--ember); }
+.cm-search button:hover { color: var(--ember-ink); }
 .cm-board { flex: 1 1 auto; min-height: 0; max-height: none; overflow: auto; overscroll-behavior: contain; }
 .cm-board .board th { z-index: 2; }
-.cm-board .board tr:focus-visible { outline: 2px solid var(--ember); outline-offset: -2px; }
+.cm-board .board tr:focus-visible { outline: 2px solid var(--ember-ink); outline-offset: -2px; }
 .cm-board .board td.cm-name { font-family: var(--sans); font-variant-numeric: normal; }
 .cm-board .board th.cm-fcol, .cm-board .board td.cm-fcol { width: 40px; padding-left: 0; padding-right: 8px; text-align: right; }
 .cm-board .empty td { cursor: default; color: var(--muted); font-family: var(--sans); padding: 20px 8px; }
@@ -67,10 +67,10 @@
 .cm-follow::before, .cm-follow::after { content: ''; position: absolute; background: currentColor; left: 50%; top: 50%; }
 .cm-follow::before { width: 10px; height: 1.5px; transform: translate(-50%, -50%); }
 .cm-follow::after { width: 1.5px; height: 10px; transform: translate(-50%, -50%); }
-.cm-follow[aria-pressed='true'] { background: var(--ember); border-color: var(--ember); color: var(--chalk); }
+.cm-follow[aria-pressed='true'] { background: var(--ember); border-color: var(--ember); color: var(--ember-fg); }
 .cm-follow[aria-pressed='true']::before { width: 5px; height: 2px; transform: translate(-80%, 0) rotate(45deg); }
 .cm-follow[aria-pressed='true']::after { width: 2px; height: 11px; transform: translate(40%, -60%) rotate(40deg); }
-.board tr.sel .cm-follow[aria-pressed='true'] { background: var(--chalk); color: var(--ember); border-color: var(--chalk); }
+.board tr.sel .cm-follow[aria-pressed='true'] { background: var(--ink); color: var(--ember); border-color: var(--ink); }
 .cm-live .runner.cm-followed circle { stroke: var(--ember); stroke-width: 3; }
 .cm-live .runner { cursor: pointer; }
 
@@ -106,14 +106,14 @@
 
 /* ---------- provas: vagas ---------- */
 .races.cm-races .race-row { grid-template-columns: 130px 1.7fr 1fr 1fr 0.8fr 0.9fr 120px; }
-.cm-left.low { color: var(--ember); }
+.cm-left.low { color: var(--ember-ink); }
 .race-row:hover .cm-left.low { color: inherit; }
 .cm-sm-only { display: none; }
 @media (max-width: 900px) {
   .races.cm-races .race-row { grid-template-columns: 76px 1fr auto; }
   .cm-sm-only { display: inline; }
 }
-.cm-soldout { color: var(--ember); }
+.cm-soldout { color: var(--ember-ink); }
 .stats b.cm-word { font-size: clamp(20px, 2.2vw, 32px); line-height: clamp(30px, 3.6vw, 54px); }
 /* título da prova: ocupa a largura toda e encolhe para a palavra mais longa caber (sem partir palavras).
    0.75 = largura média de uma maiúscula em Schibsted Grotesk 800 (≈ 0.6 em) com folga. */

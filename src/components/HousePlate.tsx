@@ -38,7 +38,7 @@ export function HousePlate({ listing }: { listing: Listing }) {
       {night ? (
         <circle cx={320} cy={70} r={22} fill="#f2eee7" opacity="0.9" />
       ) : (
-        <circle cx={320} cy={80} r={34} fill="#e20613" opacity="0.9" />
+        <circle cx={320} cy={80} r={34} fill="#f17307" opacity="0.9" />
       )}
       <rect x="0" y="262" width="400" height="38" fill={night ? '#241d18' : '#caba9f'} />
       {/* chaminé alentejana */}
@@ -52,7 +52,7 @@ export function HousePlate({ listing }: { listing: Listing }) {
       {/* barra */}
       <rect x={x0} y={236} width={w} height={26} fill={BAR[listing.tone]} />
       {/* porta */}
-      <rect x={door} y={176} width={34} height={86} fill={night ? '#e20613' : '#4b3c31'} />
+      <rect x={door} y={176} width={34} height={86} fill={night ? '#f17307' : '#4b3c31'} />
       <rect x={door - 4} y={172} width={42} height={6} fill={BAR[listing.tone]} />
       {/* janelas */}
       {Array.from({ length: windows }, (_, i) => {
