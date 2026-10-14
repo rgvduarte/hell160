@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { Map as MLMap, StyleSpecification, LngLatBoundsLike, IControl, MapSourceDataEvent } from 'maplibre-gl'
+import type { Map as MLMap, StyleSpecification, LngLatBoundsLike, IControl, MapSourceDataEvent, CameraOptions } from 'maplibre-gl'
 import type { RouteWaypoint } from '../data/routes'
 import '../styles/map.css'
 
@@ -19,7 +19,6 @@ const DEM_ATTRIBUTION =
 // O Alentejo é plano: sem exagero, as colinas quase não se veem. O fator aparece no mapa.
 const EXAGGERATION = 1.6
 const PITCH_3D = 60
-const BEARING_3D = -20
 const DEM = 'relevo-dem'
 const HILLSHADE_SRC = 'relevo-sombra'
 const HILLSHADE = 'relevo-sombra'
@@ -39,8 +38,7 @@ const LOCALE = {
   'Marker.Title': 'Ponto do percurso',
   'NavigationControl.ZoomIn': 'Aproximar',
   'NavigationControl.ZoomOut': 'Afastar',
-  'NavigationControl.ResetBearing': 'Repor o norte',
-  'NavigationControl.ResetBearingAndPitch': 'Repor o norte e a inclinação',
+  'NavigationControl.ResetBearing': 'Arrasta para rodar; clica para repor o norte',
   'AttributionControl.ToggleAttribution': 'Mostrar atribuição',
   'AttributionControl.MapFeedback': 'Sugerir correções ao mapa',
   'FullscreenControl.Enter': 'Ecrã inteiro',
@@ -76,6 +74,8 @@ async function loadStyle(signal: AbortSignal): Promise<{ style: StyleSpecificati
     const res = await fetch(POSITRON, { signal })
     if (!res.ok) throw new Error(String(res.status))
     const style = (await res.json()) as StyleSpecification
+    // a atribuição (em português) vai no controlo do mapa; a do estilo repetia-a em inglês
+    for (const src of Object.values(style.sources)) if ('attribution' in src) delete src.attribution
     style.layers = style.layers
       .filter((l) => !/poi|housenumber|aerodrome|airport/.test(l.id))
       .map((l) => {
@@ -161,8 +161,10 @@ export function TrailMap({
   const mapRef = useRef<MLMap | null>(null)
   const libRef = useRef<typeof import('maplibre-gl') | null>(null)
   const boundsRef = useRef<LngLatBoundsLike | null>(null)
+  const sampleRef = useRef<[number, number][]>([])
   const compassRef = useRef<IControl | null>(null)
   const demWatch = useRef<(() => void) | null>(null)
+  const demLoaded = useRef(false)
   const [state, setState] = useState<'loading' | 'ready' | 'fallback' | 'error'>('loading')
   const [missing, setMissing] = useState<string[]>([])
   const [inView, setInView] = useState(false)
@@ -195,7 +197,7 @@ export function TrailMap({
       const maplibregl = maplibre.default
       window.clearTimeout(timer)
       if (cancelled || !el.current) return
-      libRef.current = maplibre
+      libRef.current = maplibregl
       const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
       map = new maplibregl.Map({
         container: el.current,
@@ -233,6 +235,7 @@ export function TrailMap({
         const bounds = new maplibregl.LngLatBounds()
         const notFound: string[] = []
         const pins: MapMarker[] = []
+        const all: [number, number][] = []
         for (const r of routes) {
           try {
             const res = await fetch(r.url)
@@ -245,7 +248,7 @@ export function TrailMap({
             const w = r.width ?? 3
             map.addLayer({ id: `${r.id}-casing`, type: 'line', source: r.id, layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#fff', 'line-width': w + 3 } })
             map.addLayer({ id: r.id, type: 'line', source: r.id, layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': r.color ?? TONES.ember, 'line-width': w } })
-            for (const line of lines) for (const c of line) bounds.extend([c[0], c[1]])
+            for (const line of lines) for (const c of line) bounds.extend([c[0], c[1]]), all.push([c[0], c[1]])
             // partida e meta: o primeiro e o último ponto do traçado
             const a = lines[0][0]
             const b = lines[lines.length - 1].at(-1)!
@@ -268,10 +271,13 @@ export function TrailMap({
         for (const m of [...pins, ...markers].sort((x, y) => order.indexOf(x.kind ?? 'poi') - order.indexOf(y.kind ?? 'poi'))) {
           new maplibregl.Marker({ element: markerNode(m), anchor: 'left', opacityWhenCovered: '0.35' }).setLngLat(m.lngLat).addTo(map)
         }
-        for (const m of markers) bounds.extend(m.lngLat)
+        for (const m of markers) bounds.extend(m.lngLat), all.push(m.lngLat)
+        // amostra do traçado para enquadrar a vista 3D (que não é um retângulo no ecrã)
+        const every = Math.max(1, Math.ceil(all.length / 300))
+        sampleRef.current = all.filter((_, i) => i % every === 0)
         if (!bounds.isEmpty()) {
           boundsRef.current = bounds.toArray() as LngLatBoundsLike
-          map.fitBounds(boundsRef.current, { padding: fitPadding(map), duration: 0, maxZoom: fallback ? 9 : 12 })
+          map.fitBounds(boundsRef.current, { padding: fitPadding(map, terrain3d), duration: 0, maxZoom: fallback ? 9 : 12 })
         }
         setMissing(notFound)
         setState(fallback ? 'fallback' : 'ready')
@@ -285,15 +291,17 @@ export function TrailMap({
       window.clearTimeout(timer)
       demWatch.current?.()
       demWatch.current = null
+      demLoaded.current = false
       map?.remove()
       mapRef.current = null
       compassRef.current = null
       boundsRef.current = null
+      sampleRef.current = []
       setView('2d')
       setRelief('idle')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inView, JSON.stringify(routes), JSON.stringify(markers), waypoints])
+  }, [inView, JSON.stringify(routes), JSON.stringify(markers), waypoints, terrain3d])
 
   // ---------- 2D / 3D ----------
   const reducedMotion = () => !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -313,8 +321,9 @@ export function TrailMap({
     // em 3D, bússola para repor o norte e a inclinação
     const lib = libRef.current
     if (on && !compassRef.current && lib) {
-      compassRef.current = new lib.default.NavigationControl({ showZoom: false, showCompass: true, visualizePitch: true })
-      map.addControl(compassRef.current, 'top-right')
+      const compass = new lib.NavigationControl({ showZoom: false, showCompass: true, visualizePitch: true })
+      compassRef.current = compass
+      map.addControl(compass, 'top-right')
     } else if (!on && compassRef.current) {
       map.removeControl(compassRef.current)
       compassRef.current = null
@@ -323,12 +332,11 @@ export function TrailMap({
 
   function camera(map: MLMap, to3d: boolean) {
     const bounds = boundsRef.current
-    const base = bounds ? map.cameraForBounds(bounds, { padding: fitPadding(map), bearing: to3d ? BEARING_3D : 0, maxZoom: 12 }) : undefined
-    const opts = {
-      ...(base ? { center: base.center, zoom: to3d ? (base.zoom ?? map.getZoom()) - 0.35 : base.zoom } : {}),
-      pitch: to3d ? PITCH_3D : 0,
-      bearing: to3d ? BEARING_3D : 0,
-    }
+    const pad = padWithToggle(map)
+    let opts: CameraOptions = { pitch: to3d ? PITCH_3D : 0, bearing: 0 }
+    const base = bounds ? map.cameraForBounds(bounds, { padding: pad, maxZoom: 12 }) : undefined
+    if (base) opts = { ...opts, center: base.center, zoom: base.zoom }
+    if (to3d && base && sampleRef.current.length) opts = fitPitched(map, opts, pad, sampleRef.current)
     if (reducedMotion()) map.jumpTo(opts)
     else map.easeTo({ ...opts, duration: 900 })
   }
@@ -345,6 +353,7 @@ export function TrailMap({
       if (map.getLayer(HILLSHADE)) map.removeLayer(HILLSHADE)
       if (map.getSource(HILLSHADE_SRC)) map.removeSource(HILLSHADE_SRC)
       if (map.getSource(DEM)) map.removeSource(DEM)
+      demLoaded.current = false
     } else if (map.getLayer(HILLSHADE)) {
       map.setLayoutProperty(HILLSHADE, 'visibility', 'none')
     }
@@ -381,10 +390,10 @@ export function TrailMap({
     } else map.setLayoutProperty(HILLSHADE, 'visibility', 'visible')
 
     // o relevo chegou? basta uma tile; erro antes disso ou 12 s sem nada: volta ao 2D com aviso
-    let got = false
+    let got = demLoaded.current
     const onData = (e: MapSourceDataEvent) => {
       if (e.sourceId === DEM && e.tile && !got) {
-        got = true
+        got = demLoaded.current = true
         setRelief('ok')
         cleanup()
       }
@@ -400,10 +409,13 @@ export function TrailMap({
     }
     demWatch.current?.()
     demWatch.current = cleanup
-    map.on('sourcedata', onData)
-    map.on('error', onError)
+    if (got) cleanup()
+    else {
+      map.on('sourcedata', onData)
+      map.on('error', onError)
+    }
 
-    setRelief('loading')
+    setRelief(got ? 'ok' : 'loading')
     setView('3d')
     map.setTerrain({ source: DEM, exaggeration: EXAGGERATION })
     gestures3d(map, true)
@@ -411,6 +423,7 @@ export function TrailMap({
   }
 
   const ready = state === 'ready' || state === 'fallback'
+  const noRoute = routes.length > 0 && missing.length === routes.length
   const factor = EXAGGERATION.toLocaleString('pt-PT')
   const reliefNote =
     relief === 'failed'
@@ -426,14 +439,11 @@ export function TrailMap({
       <div ref={el} className="trailmap-canvas" />
       {state === 'loading' && <p className="trailmap-note mono">A carregar o mapa…</p>}
       {state === 'error' && <p className="trailmap-note mono">Não foi possível mostrar o mapa.</p>}
-      {state !== 'loading' && routes.length > 0 && missing.length === routes.length && (
+      {state !== 'loading' && noRoute && (
         <p className="trailmap-note mono">Traçado oficial publicado em breve</p>
       )}
-      {terrain3d && ready && (
+      {terrain3d && ready && !noRoute && (
         <div className="trailmap-view">
-          <p className="trailmap-view-note" role="status" aria-live="polite">
-            {reliefNote && <span>{reliefNote}</span>}
-          </p>
           <div className="trailmap-seg" role="group" aria-label="Vista do mapa">
             <button type="button" aria-pressed={view === '2d'} onClick={() => view === '3d' && to2d()}>
               Ver em 2D
@@ -442,6 +452,9 @@ export function TrailMap({
               Ver em 3D
             </button>
           </div>
+          <p className="trailmap-view-note" role="status" aria-live="polite">
+            {reliefNote && <span>{reliefNote}</span>}
+          </p>
         </div>
       )}
       {children}
@@ -449,9 +462,38 @@ export function TrailMap({
   )
 }
 
-// margem à volta do traçado: menos em ecrãs estreitos; em baixo, espaço para o botão 2D / 3D
-function fitPadding(map: MLMap) {
-  const w = map.getContainer().clientWidth
-  const p = w < 480 ? 28 : 48
-  return { top: p, right: p + 24, bottom: p + 40, left: p }
+// margem à volta do traçado: menos em ecrãs estreitos; com o botão 2D / 3D, mais espaço em cima
+type Pad = { top: number; right: number; bottom: number; left: number }
+function padWithToggle(map: MLMap): Pad {
+  const p = map.getContainer().clientWidth < 480 ? 24 : 44
+  return { top: p + 52, right: p, bottom: p, left: p }
+}
+const fitPadding = (map: MLMap, toggle: boolean): Pad | number =>
+  toggle ? padWithToggle(map) : map.getContainer().clientWidth < 480 ? 24 : 44
+
+// Vista inclinada: o fitBounds do MapLibre não conta com a perspetiva (o perto aumenta, o longe encolhe).
+// Mede onde o traçado cai no ecrã e corrige centro e zoom algumas vezes; tudo na mesma tarefa, sem desenhar.
+function fitPitched(map: MLMap, cam: CameraOptions, pad: Pad, pts: [number, number][]): CameraOptions {
+  const before = { center: map.getCenter(), zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() }
+  const { clientWidth: W, clientHeight: H } = map.getContainer()
+  const tw = Math.max(40, W - pad.left - pad.right)
+  const th = Math.max(40, H - pad.top - pad.bottom)
+  let c = { ...cam }
+  for (let i = 0; i < 6; i++) {
+    map.jumpTo(c)
+    let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity]
+    for (const p of pts) {
+      const s = map.project(p)
+      x0 = Math.min(x0, s.x)
+      x1 = Math.max(x1, s.x)
+      y0 = Math.min(y0, s.y)
+      y1 = Math.max(y1, s.y)
+    }
+    const k = Math.min(tw / Math.max(1, x1 - x0), th / Math.max(1, y1 - y0))
+    const center = map.unproject([W / 2 + (x0 + x1) / 2 - (pad.left + tw / 2), H / 2 + (y0 + y1) / 2 - (pad.top + th / 2)])
+    c = { ...c, center, zoom: Math.min(12, map.getZoom() + Math.log2(k)) }
+    if (Math.abs(Math.log2(k)) < 0.02) break
+  }
+  map.jumpTo(before)
+  return c
 }
