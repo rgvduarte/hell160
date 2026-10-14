@@ -23,14 +23,15 @@ const BEATS = [
   { at: FINISH_P, kicker: 'Meta', text: 'A-do-Pinto outra vez, domingo de manhã. A meta fecha às 10:00, 36 horas depois da partida.' },
 ]
 
-// Cor do céu por hora do dia (0–24). Noite preta e madrugada a brasa escura com texto branco;
+// Cor do céu por hora do dia (0–24), nos tons do logótipo: noite do negativo, madrugada e ocaso em brasa do fogo,
+// dia em areia clara a branco. Noite e brasa levam texto branco;
 // dia claro com texto escuro. A passagem é um salto (duas paragens à mesma hora, com transição curta no CSS):
 // o céu nunca fica num cinzento médio onde nem texto branco nem escuro chegam a 4,5:1.
 // Às 08:00 de domingo (fim da história) o céu é o branco da secção seguinte.
 const SKY: [number, number[]][] = [
-  [0, [0, 0, 0]], [5, [17, 17, 17]], [6.2, [42, 18, 10]], [6.9, [74, 28, 16]],
-  [6.9, [207, 204, 198]], [8, [255, 255, 255]], [15, [255, 255, 255]], [18.6, [222, 219, 213]], [19.8, [204, 200, 193]],
-  [19.8, [74, 28, 16]], [20.6, [42, 18, 10]], [21.3, [17, 17, 17]], [24, [0, 0, 0]],
+  [0, [13, 10, 8]], [5, [21, 17, 14]], [6.2, [62, 20, 8]], [6.9, [104, 32, 10]],
+  [6.9, [234, 227, 217]], [8, [255, 255, 255]], [15, [255, 255, 255]], [18.6, [242, 238, 231]], [19.8, [234, 227, 217]],
+  [19.8, [104, 32, 10]], [20.6, [62, 20, 8]], [21.3, [21, 17, 14]], [24, [13, 10, 8]],
 ]
 
 // luminância relativa WCAG

@@ -378,7 +378,7 @@ export function Live() {
               return (
                 <g key={rn.bib} className={cls} style={{ transform: `translate(${x}px, ${y}px)` }} onClick={() => setSel(rn.bib)}>
                   <title>#{rn.bib} {rn.name}</title>
-                  <circle r={isSel ? 10 : 6} fill={isSel ? 'var(--ember)' : s.st === 'warn' && view === 'org' ? '#e0a43a' : '#efe9df'} />
+                  <circle r={isSel ? 10 : 6} fill={isSel ? 'var(--ember)' : s.st === 'warn' && view === 'org' ? 'var(--fire-4)' : 'var(--areia)'} />
                 </g>
               )
             })}
@@ -427,7 +427,7 @@ export function Live() {
                 <dt>Ritmo médio</dt><dd>{h > 0 && selected.s.km > 0 ? `${dec1((h * 60) / selected.s.km)} min/km` : '—'}</dd>
                 {view === 'org' && (
                   <>
-                    <dt>Telemóvel</dt><dd style={{ color: selected.s.phoneOk ? undefined : '#e0a43a' }}>{selected.s.phoneOk ? 'GPS + rede · há 1 min' : 'Sem rede · último sinal no km ' + NO_COVERAGE[0]}</dd>
+                    <dt>Telemóvel</dt><dd style={{ color: selected.s.phoneOk ? undefined : 'var(--fire-3)' }}>{selected.s.phoneOk ? 'GPS + rede · há 1 min' : 'Sem rede · último sinal no km ' + NO_COVERAGE[0]}</dd>
                     <dt>Relógio</dt><dd>GPS · há 1 min</dd>
                     <dt>Posição usada</dt><dd>{selected.s.phoneOk ? 'Telemóvel (relógio confirma)' : 'Relógio, via satélite'}</dd>
                   </>

@@ -4,16 +4,16 @@ import type { Listing } from '../data/listings'
 // Serve de placeholder honesto até haver fotografias reais de cada casa.
 
 const SKY: Record<Listing['tone'], string> = {
-  cal: '#e7d9c1',
-  ocre: '#d9b98a',
-  terra: '#c98f6a',
-  noite: '#1d1915',
+  cal: '#f2eee7',
+  ocre: '#caba9f',
+  terra: '#7a6a58',
+  noite: '#15110e',
 }
 const BAR: Record<Listing['tone'], string> = {
-  cal: '#2f5d8a',
-  ocre: '#c79a2e',
-  terra: '#2f5d8a',
-  noite: '#c79a2e',
+  cal: '#f17307',
+  ocre: '#4b3c31',
+  terra: '#f8ab02',
+  noite: '#f8ab02',
 }
 
 function hash(s: string) {
@@ -36,23 +36,23 @@ export function HousePlate({ listing }: { listing: Listing }) {
     <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice" aria-hidden>
       <rect width="400" height="300" fill={SKY[listing.tone]} />
       {night ? (
-        <circle cx={320} cy={70} r={22} fill="#efe9df" opacity="0.9" />
+        <circle cx={320} cy={70} r={22} fill="#f2eee7" opacity="0.9" />
       ) : (
         <circle cx={320} cy={80} r={34} fill="#e20613" opacity="0.9" />
       )}
-      <rect x="0" y="262" width="400" height="38" fill={night ? '#2a241e' : '#b49a74'} />
+      <rect x="0" y="262" width="400" height="38" fill={night ? '#241d18' : '#caba9f'} />
       {/* chaminé alentejana */}
-      <rect x={chimX} y={roof - 56} width={26} height={60} fill="#f6f1e8" />
-      <rect x={chimX - 4} y={roof - 62} width={34} height={10} fill="#f6f1e8" />
-      <rect x={chimX + 6} y={roof - 48} width={4} height={8} fill="#15120f" opacity="0.6" />
-      <rect x={chimX + 16} y={roof - 48} width={4} height={8} fill="#15120f" opacity="0.6" />
+      <rect x={chimX} y={roof - 56} width={26} height={60} fill="#faf8f4" />
+      <rect x={chimX - 4} y={roof - 62} width={34} height={10} fill="#faf8f4" />
+      <rect x={chimX + 6} y={roof - 48} width={4} height={8} fill="#1f1813" opacity="0.6" />
+      <rect x={chimX + 16} y={roof - 48} width={4} height={8} fill="#1f1813" opacity="0.6" />
       {/* parede */}
-      <rect x={x0} y={roof} width={w} height={262 - roof} fill="#f6f1e8" />
-      <rect x={x0 - 6} y={roof - 8} width={w + 12} height={10} fill="#a54a2a" />
+      <rect x={x0} y={roof} width={w} height={262 - roof} fill="#faf8f4" />
+      <rect x={x0 - 6} y={roof - 8} width={w + 12} height={10} fill="#e93d0d" />
       {/* barra */}
       <rect x={x0} y={236} width={w} height={26} fill={BAR[listing.tone]} />
       {/* porta */}
-      <rect x={door} y={176} width={34} height={86} fill={night ? '#e20613' : '#3a332c'} />
+      <rect x={door} y={176} width={34} height={86} fill={night ? '#e20613' : '#4b3c31'} />
       <rect x={door - 4} y={172} width={42} height={6} fill={BAR[listing.tone]} />
       {/* janelas */}
       {Array.from({ length: windows }, (_, i) => {
@@ -62,11 +62,11 @@ export function HousePlate({ listing }: { listing: Listing }) {
         return (
           <g key={i}>
             <rect x={wx - 4} y={168} width={38} height={46} fill={BAR[listing.tone]} />
-            <rect x={wx} y={172} width={30} height={38} fill={night ? '#e8b04a' : '#3a332c'} />
+            <rect x={wx} y={172} width={30} height={38} fill={night ? '#f8ab02' : '#4b3c31'} />
           </g>
         )
       })}
-      {night && <rect width="400" height="300" fill="#0f0d0b" opacity="0.35" />}
+      {night && <rect width="400" height="300" fill="#0d0a08" opacity="0.35" />}
     </svg>
   )
 }

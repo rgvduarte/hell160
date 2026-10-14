@@ -9,10 +9,10 @@
 }
 /* cores sólidas: o texto secundário fica acima de 4,5:1 em todo o céu (ver SKY em ScrollStory.tsx) */
 .story.is-dark {
-  --bg: var(--sky); --fg: #fff; --muted: rgba(255, 255, 255, 0.8); --line: rgba(255, 255, 255, 0.16);
+  --bg: var(--sky); --fg: #fff; --muted: var(--areia); --line: rgba(202, 186, 159, 0.2);
 }
 .story.is-light {
-  --bg: var(--sky); --fg: var(--ink); --muted: #3d3d3d; --line: rgba(17, 17, 17, 0.16);
+  --bg: var(--sky); --fg: var(--ink); --muted: var(--ink-2); --line: rgba(75, 60, 49, 0.18);
 }
 .story-pin {
   position: sticky;
@@ -94,7 +94,7 @@
 .story-cta { position: absolute; left: 0; bottom: 0; opacity: 0; transform: translateY(12px); transition: opacity 300ms, transform 300ms; }
 .story-cta.on { opacity: 1; transform: none; }
 .story-profile { position: relative; z-index: 1; grid-row: 3; padding-bottom: 20px; }
-.story-profile .profile .area { fill: currentColor; opacity: 0.12; }
+.story-profile .profile .area { fill: var(--areia); opacity: 0.5; }
 .story-profile .profile .area-done { fill: var(--ember); opacity: 0.9; }
 .story-profile .profile .marker { stroke: var(--fg); stroke-width: 2; }
 .story-profile .profile .tick { fill: var(--muted); }

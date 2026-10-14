@@ -230,10 +230,10 @@
 .hp-none .muted { font-size: 14px; }
 
 .hp-wall { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 16px; aspect-ratio: 16 / 10; padding: 16px; }
-.hp-wall-cal { background: #ecebe7; color: var(--ink); }
-.hp-wall-ocre { background: #e7cf9f; color: var(--ink); }
-.hp-wall-terra { background: #c98a63; color: #1c120c; }
-.hp-wall-noite { background: #1c232e; color: #f2f4f3; }
+.hp-wall-cal { background: var(--panel); color: var(--ink); }
+.hp-wall-ocre { background: var(--areia); color: var(--ink); }
+.hp-wall-terra { background: var(--po); color: #fff; }
+.hp-wall-noite { background: var(--night-2); color: var(--areia); }
 .hp-km { align-self: flex-start; font: 600 13px var(--sans); background: rgba(255, 255, 255, 0.9); color: var(--ink); padding: 6px 10px; border-radius: 999px; }
 .hp-wall-noite .hp-km { background: rgba(255, 255, 255, 0.92); }
 .hp-quote { font: 600 clamp(17px, 1.6vw, 20px) / 1.32 var(--display); letter-spacing: -0.01em; max-width: 26ch; }
@@ -268,7 +268,7 @@
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     position: sticky; bottom: 0; z-index: 20; margin: 0 calc(-1 * var(--gutter));
     padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom));
-    background: var(--bg); border-top: 1px solid var(--line); box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.06);
+    background: var(--bg); border-top: 1px solid var(--line); box-shadow: 0 -6px 20px rgba(31, 24, 19, 0.08);
     font-size: 15px;
   }
   .hp-sticky .btn { flex: none; }
